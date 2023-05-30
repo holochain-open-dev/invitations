@@ -37,9 +37,6 @@ extern crate hc_rzome_invitations;
 6. Add the zome into your `dna.yaml` file with the name `invitation`.
 7. Compile the DNA with the usual `CARGO_TARGET_DIR=target cargo build --release --target wasm32-unknown-unknown`.
 
-### Using the UI module
-
-1. Install the module with `npm install "https://github.com/holochain-engineers/invitation#ui-build"`.
 
 
 
