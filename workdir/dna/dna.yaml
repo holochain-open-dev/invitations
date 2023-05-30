@@ -6,7 +6,7 @@ integrity:
   properties: ~
   origin_time: 1679843444624527
   zomes:
-    - name: invitations_dna
+    - name: invitations_integrity
       hash: ~
       bundled: "../../target/wasm32-unknown-unknown/release/hc_zome_invitations.wasm"
       dependencies: ~
@@ -14,6 +14,6 @@ coordinator:
   zomes:
     - name: invitations
       hash: ~
-      bundled: "../../target/wasm32-unknown-unknown/release/hc_zome_invitations_rna.wasm"
+      bundled: "../../target/wasm32-unknown-unknown/release/hc_rzome_invitations.wasm"
       dependencies:
-        - name: invitations_dna
+        - name: invitations_integrity
