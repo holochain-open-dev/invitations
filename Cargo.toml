@@ -1,0 +1,21 @@
+
+[profile.dev]
+opt-level = "z"
+
+[profile.release]
+opt-level = "z"
+
+[workspace]
+resolver ="2"
+members = ["crates/zomes", "crates/rzomes"]
+
+[workspace.dependencies]
+hdi = "=0.2"
+hdk = "=0.1"
+serde = "1"
+
+[workspace.dependencies.hc_rzome_invitations]
+path = "crates/rzomes"
+
+[workspace.dependencies.hc_zome_invitations]
+path = "crates/zomes"

@@ -1,0 +1,24 @@
+[package]
+authors = ["nphias@gmail.com","manuel.r.puentes.d@gmail.com"]
+name = "hc_rzome_invitations"
+version = "0.0.1"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+name = "hc_rzome_invitations"
+
+[dependencies]
+hdk = { workspace = true }
+serde = { workspace = true }
+hc_zome_invitations = { path = "../zomes"} 
+
+#sweetests disabled until sqlite bug is fixed
+#[dev-dependencies]
+#fixt = "0.1.1"
+#futures = { version = "0.3.27", default-features = false }
+#hdk = { workspace = true, features = ["encoding", "test_utils"] }
+#holochain = { workspace = true, default-features = false, features = [
+ # "test_utils"
+#] }
+#tokio = { version = "1.3", features = ["full"] }

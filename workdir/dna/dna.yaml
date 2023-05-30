@@ -1,0 +1,19 @@
+---
+manifest_version: "1"
+name: invitations-test
+integrity:
+  network_seed: ~
+  properties: ~
+  origin_time: 1679843444624527
+  zomes:
+    - name: invitations_dna
+      hash: ~
+      bundled: "../../target/wasm32-unknown-unknown/release/hc_zome_invitations.wasm"
+      dependencies: ~
+coordinator:
+  zomes:
+    - name: invitations
+      hash: ~
+      bundled: "../../target/wasm32-unknown-unknown/release/hc_zome_invitations_rna.wasm"
+      dependencies:
+        - name: invitations_dna
