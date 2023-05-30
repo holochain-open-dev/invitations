@@ -11,3 +11,5 @@
 .hc*
 .hc
 .running
+
+.github/workflows/*
