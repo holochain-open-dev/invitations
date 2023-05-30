@@ -1,4 +1,4 @@
-# Invitations DNA
+# Invitations
 
 A zome for creating and managing group invitations
 
