@@ -1,5 +1,5 @@
 use hdk::prelude::*;
-use hc_zome_invitations::{EntryTypes, LinkTypes};
+use hc_integrity_zome_invitations::{EntryTypes, LinkTypes};
 use crate::invite::InvitationEntryInfo;
 
 #[derive(Serialize, Deserialize, Debug)]
