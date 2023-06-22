@@ -39,7 +39,7 @@ test('1. create and compare invitation lists', async () => {
     console.log("Bob gets his pending invites")
     const invite_list_bob: InvitationEntryInfo[] = await getPendingInvites(bob.cells[0])
     console.log(invite_list_bob)
-    assert(invite_list_bob)
+    assert.isNotEmpty(invite_list_bob)
   
     console.log("Alice gets her pending Invites")
     const invite_list_alice: InvitationEntryInfo[] = await getPendingInvites(alice.cells[0])
@@ -241,7 +241,7 @@ test('4. create, reject and clear Invite', async () => {
     console.log(reject)
     
     console.log("Bob clears the invitation")
-    const result: boolean = await clearInvite(bob.cells[0], bob_signal.payload['data'].invitation_entry_hash)
+    const result: boolean = await clearInvite(bob.cells[0], bob_signal.payload['data'].invitation_creation_hash)
     console.log(result)
 
     console.log("Bob checks that he has deleted the invitation from his list")

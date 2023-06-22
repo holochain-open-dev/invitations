@@ -5,7 +5,6 @@ export type InvitationEntryInfo = {
   inviter: AgentPubKey
   invitees: AgentPubKey[],
   timestamp: number,
-  invitation_entry_hash: EntryHash,
   invitation_creation_hash: ActionHash,
   invitees_who_accepted: AgentPubKey[],
   invitees_who_rejected: AgentPubKey[]
@@ -43,11 +42,11 @@ export async function rejectInvite(cell:CallableCell, creationHash: ActionHash):
   });
 }
 
-export async function clearInvite(cell:CallableCell, entryHash: EntryHash): Promise<boolean> {
+export async function clearInvite(cell:CallableCell, creationHash: ActionHash): Promise<boolean> {
   return cell.callZome({
     zome_name: "invitations",
     fn_name: "clear_invitation",
-    payload: entryHash
+    payload: creationHash
   });
 }
 

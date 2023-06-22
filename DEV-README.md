@@ -14,24 +14,24 @@
 
 ```toml 
 [dependencies]
-hc_rzome_invitations = {git = "https://github.com/holochain-engineers/invitations.git", branch = "crates"}
+hc_coordinator_zome_invitations = {git = "https://github.com/holochain-engineers/invitations.git", branch = "crates-only"}
 ```
 add this zome as a dependency in the integrity `Cargo.toml` file:
 ```toml 
 [dependencies]
-hc_zome_invitations = {git = "https://github.com/holochain-engineers/invitations.git", branch = "crates"}
+hc_integrity_zome_invitations = {git = "https://github.com/holochain-engineers/invitations.git", branch = "crates-only"}
 ```
 
 5. Create a `src` folder besides each `Cargo.toml` with this content:
 
 intergity:
 ```rust
-extern crate hc_zome_invitations;
+extern crate hc_integrity_zome_invitations;
 ```
 
 coordinator:
 ```rust
-extern crate hc_rzome_invitations;
+extern crate hc_coordinator_zome_invitations;
 ```
 
 6. Add the zome into your `dna.yaml` file with the name `invitation`.

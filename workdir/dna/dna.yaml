@@ -8,12 +8,12 @@ integrity:
   zomes:
     - name: invitations_integrity
       hash: ~
-      bundled: "../../target/wasm32-unknown-unknown/release/hc_zome_invitations.wasm"
+      bundled: "../../target/wasm32-unknown-unknown/release/hc_integrity_zome_invitations.wasm"
       dependencies: ~
 coordinator:
   zomes:
     - name: invitations
       hash: ~
-      bundled: "../../target/wasm32-unknown-unknown/release/hc_rzome_invitations.wasm"
+      bundled: "../../target/wasm32-unknown-unknown/release/hc_coordinator_zome_invitations.wasm"
       dependencies:
         - name: invitations_integrity
