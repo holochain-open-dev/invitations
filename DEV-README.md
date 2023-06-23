@@ -5,6 +5,8 @@
 
 ## Installation and usage
 
+## NOTE: due to bug https://github.com/holochain/holochain/issues/2418 signals are currently not working for remote / git dependencies
+
 ### Including the zome in your DNA
 
 1. Create a new `invitations` folder in the `zomes/coordinator` and `zomes/integrity` of the consuming DNA.
