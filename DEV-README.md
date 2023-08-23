@@ -5,8 +5,6 @@
 
 ## Installation and usage
 
-## NOTE: due to bug https://github.com/holochain/holochain/issues/2418 signals are currently not working for remote / git dependencies
-
 ### Including the zome in your DNA
 
 1. Create a new `invitations` folder in the `zomes/coordinator` and `zomes/integrity` of the consuming DNA.
@@ -36,7 +34,7 @@ coordinator:
 extern crate hc_coordinator_zome_invitations;
 ```
 
-6. Add the zome into your `dna.yaml` file with the name `invitation`.
+6. Add the coordinator and integrity zome details into your `dna.yaml`.
 7. Compile the DNA with the usual `CARGO_TARGET_DIR=target cargo build --release --target wasm32-unknown-unknown`.
 
 
