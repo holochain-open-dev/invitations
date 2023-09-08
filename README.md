@@ -1,10 +1,16 @@
 # Invitations
 
-A zome for creating and managing group invitations
+A zome for creating and managing individual or group invitations, can be used in calendars and team coordination
 
 ## Environment Setup
 
 > PREREQUISITE: set up the [holochain development environment](https://developer.holochain.org/docs/install/).
+
+## Developer setup
+
+Visit the [developer setup](/DEV-README.md).
+
+## TLDR
 
 Enter the nix develop shell by running this in the root folder of the repository: 
 
