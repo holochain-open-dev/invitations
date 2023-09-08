@@ -1,7 +1,7 @@
 [package]
 authors = ["nphias@gmail.com","manuel.r.puentes.d@gmail.com"]
 name = "hc_integrity_zome_invitations"
-version = "0.0.1"
+version = "0.1.6"
 edition = "2021"
 
 [lib]
