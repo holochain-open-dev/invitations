@@ -98,10 +98,11 @@ fn get_invitation_detail(action_hash:&ActionHash, original_action_hash: &ActionH
 }
 
 fn get_invitation_detail_by_link_target(link_target:HoloHash<hash_type::AnyLinkable>) -> ExternResult<InviteInfo> {
-    let input = GetInput::new(ActionHash::from(link_target.clone()).into(),GetOptions::default());
-    if let Some(invite_record) = get(input.any_dht_hash, GetOptions::content())? {
-        let invite_entry_info = invite::get_invitation_info(invite_record,&ActionHash::from(link_target).into())?;
-        return Ok(invite_entry_info)
+    if let Ok(action_hash) = ActionHash::try_from(link_target){
+        if let Some(invite_record) = get(action_hash.clone(), GetOptions::content())? {
+            let invite_entry_info = invite::get_invitation_info(invite_record,&action_hash)?;
+            return Ok(invite_entry_info)
+        }
     }
     return Err(wasm_error!("Invite_entry_info not found"))
 

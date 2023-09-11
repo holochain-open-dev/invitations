@@ -2,13 +2,13 @@
   "name": "tests",
   "private": true,
   "scripts": {
-    "test": "vitest run"
+    "test": "RUST_LOG=info,kitsune_p2p=debug,wasmer_compiler_cranelift=off && TRYORAMA_LOG_LEVEL=debug && vitest run"
   },
   "dependencies": {
     "@msgpack/msgpack": "^2.7.0",
-    "@holochain/client": "^0.12.2",
-    "@holochain/tryorama": "^0.11.0",
-    "typescript": "^4.9.4",
+    "@holochain/client": "^0.16.1",
+    "@holochain/tryorama": "^0.15.0",
+    "typescript": "^5.2.2",
     "vitest": "^0.28.4"
   },
   "type": "module"
