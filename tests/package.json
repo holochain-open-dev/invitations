@@ -2,7 +2,7 @@
   "name": "tests",
   "private": true,
   "scripts": {
-    "test": "vitest run"
+    "test": "RUST_LOG=info,kitsune_p2p=debug,wasmer_compiler_cranelift=off && TRYORAMA_LOG_LEVEL=debug && vitest run"
   },
   "dependencies": {
     "@msgpack/msgpack": "^2.7.0",

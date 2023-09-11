@@ -1,7 +1,7 @@
 import { assert, test } from "vitest";
 
-import { runScenario, pause, CallableCell, dhtSync } from '@holochain/tryorama';
-import { NewEntryAction, ActionHash, Record, AppBundleSource, fakeDnaHash, fakeActionHash, fakeAgentPubKey, fakeEntryHash, AppSignalCb, AppSignal, RecordEntry } from '@holochain/client';
+import { runScenario, pause, CallableCell, dhtSync, runLocalServices, createConductor, enableAndGetAgentApp, stopLocalServices, cleanAllConductors } from '@holochain/tryorama';
+import { NewEntryAction, ActionHash, Record, AppBundleSource, fakeDnaHash, fakeActionHash, fakeAgentPubKey, fakeEntryHash, AppSignalCb, AppSignal, RecordEntry, AppWebsocket } from '@holochain/client';
 import { decode } from '@msgpack/msgpack';
 
 import { acceptInvite, clearInvite, getPendingInvites, getSampleInviteInput, getSampleInviteInputUpdate, InviteInfo, rejectInvite, sendInvitations, updateInvitation } from './common.js';
@@ -50,32 +50,38 @@ test('1. create and compare invitation lists', async () => {
 
 test('2. create and accept Invite', async () => {
   await runScenario(async scenario => {
-    
-    // setup signal receivers
-    let processSignal_alice: AppSignalCb | undefined;
-    const signalReceived_alice = new Promise<AppSignal>((resolve) => {
-      processSignal_alice = (signal) => {
-        console.log("signal found for Alice:",signal)
-        resolve(signal);
-      };
-    });
 
-    let processSignal_bob: AppSignalCb | undefined;
-    const signalReceived_bob = new Promise<AppSignal>((resolve) => {
-      processSignal_bob = (signal) => {
-        console.log("signal found for bob:",signal)
+    // setup signal receivers
+    let SignalHandler_alice: AppSignalCb | undefined;
+    let signalReceived_alice: Promise<AppSignal>
+    SignalHandler_alice = (signal) => {
+      console.log("signal found for Alice:",signal)
+      signalReceived_alice = new Promise<AppSignal>((resolve) => {
         resolve(signal);
-      };
-    });
+      });
+    };
+
+    let signalReceived_bob:Promise<AppSignal>
+    let SignalHandler_bob: AppSignalCb | undefined;
+    SignalHandler_bob = (signal) => {
+      console.log("signal found for bob:",signal)
+      signalReceived_bob = new Promise<AppSignal>((resolve) => {
+        resolve(signal);
+      });
+    };
     
     const testAppPath = process.cwd() + path_to_happ;
 
     // Add 2 players with the test app to the Scenario.
-    const alice = await scenario.addPlayerWithApp({ path: testAppPath },{signalHandler: processSignal_alice});
-    const bob = await scenario.addPlayerWithApp({ path: testAppPath },{signalHandler: processSignal_bob});
-    //old code
-    //alice.conductor.appWs().on("signal",processSignal_alice)
-    //bob.conductor.appWs().on("signal",processSignal_bob)
+    const alice = await scenario.addPlayerWithApp({ path: testAppPath })
+    const bob = await scenario.addPlayerWithApp({ path: testAppPath })//,{signalHandler: SignalHandler_bob});
+    
+    //workaround hack to get signals to work
+    const appWs_alice = await alice.conductor.connectAppWs(await alice.conductor.attachAppInterface())
+    appWs_alice.on("signal", SignalHandler_alice);
+
+    const appWs_bob = await bob.conductor.connectAppWs(await bob.conductor.attachAppInterface())
+    appWs_bob.on("signal", SignalHandler_bob);
 
     await scenario.shareAllAgents();
 
@@ -112,30 +118,37 @@ test('2. create and accept Invite', async () => {
 test('3. create and update Invite', async () => {
   await runScenario(async scenario => {
    
-    // setup signal handlers
-    let processSignal_alice: AppSignalCb | undefined;
-    let signalReceived_alice = new Promise<AppSignal>((resolve) => {
-      processSignal_alice = (signal) => {
-        console.log("signal found for Alice:",signal)
+    // setup signal receivers
+    let SignalHandler_alice: AppSignalCb | undefined;
+    let signalReceived_alice: Promise<AppSignal>
+    SignalHandler_alice = (signal) => {
+      console.log("signal found for Alice:",signal)
+      signalReceived_alice = new Promise<AppSignal>((resolve) => {
         resolve(signal);
-      };
-    });
+      });
+    };
 
-    //todo change this to rxjs observable subscription to playback multiple signals
-
-    let processSignal_bob: AppSignalCb | undefined;
-    let signalReceived_bob = new Promise<AppSignal>((resolve) => {
-      processSignal_bob = (signal) => {
-        console.log("signal found for bob:",signal)
+    let signalReceived_bob:Promise<AppSignal>
+    let SignalHandler_bob: AppSignalCb | undefined;
+    SignalHandler_bob = (signal) => {
+      console.log("signal found for bob:",signal)
+      signalReceived_bob = new Promise<AppSignal>((resolve) => {
         resolve(signal);
-      };
-    });
-
+      });
+    };
+    
     const testAppPath = process.cwd() + path_to_happ;
 
     // Add 2 players with the test app to the Scenario.
-    const alice = await scenario.addPlayerWithApp({ path: testAppPath },{signalHandler: processSignal_alice});
-    const bob = await scenario.addPlayerWithApp({ path: testAppPath },{signalHandler: processSignal_bob});
+    const alice = await scenario.addPlayerWithApp({ path: testAppPath })
+    const bob = await scenario.addPlayerWithApp({ path: testAppPath })//,{signalHandler: SignalHandler_bob});
+    
+    //workaround hack to get signals to work
+    const appWs_alice = await alice.conductor.connectAppWs(await alice.conductor.attachAppInterface())
+    appWs_alice.on("signal", SignalHandler_alice);
+
+    const appWs_bob = await bob.conductor.connectAppWs(await bob.conductor.attachAppInterface())
+    appWs_bob.on("signal", SignalHandler_bob);
 
     await scenario.shareAllAgents();
 
@@ -145,7 +158,7 @@ test('3. create and update Invite', async () => {
     const invite_detail: InviteInfo = await sendInvitations(alice.cells[0],getSampleInviteInput([bob.agentPubKey]));
     assert.ok(invite_detail);
 
-    await pause(1200);
+    await dhtSync([alice, bob], bob.cells[0].cell_id[0]);
     let bob_signal = await signalReceived_bob
 
     console.log("Bob sees he has been signalled a new Invite:\n",bob_signal.payload['data'])
@@ -155,7 +168,7 @@ test('3. create and update Invite', async () => {
     const accept: boolean = await acceptInvite(bob.cells[0],bob_signal.payload['data'].invitation_original_hash)
     console.log(accept)
     
-    await pause(1200);
+    await dhtSync([alice, bob], alice.cells[0].cell_id[0]);
     let alice_signal = await signalReceived_alice
 
     assert.equal(alice_signal.payload['type'],'InvitationAccepted',"message should be of type accepted")
@@ -167,12 +180,13 @@ test('3. create and update Invite', async () => {
     const invite_list_alice: InviteInfo = await updateInvitation(alice.cells[0],inviteUpdate)
     console.log(invite_list_alice)
     
-    await pause(1200);
+    await dhtSync([alice, bob], bob.cells[0].cell_id[0]);
     let bob_signal2 = await signalReceived_bob
+    //todo change to rxjs observable subscription to playback multiple signals
 
-    //console.log("Bob sees he has been signalled an updated Invite:\n",bob_signal2.payload['data'])
-    //console.log(bob_signal2.payload['type'])
-    //assert.equal(bob_signal2.payload['type'], 'InvitationUpdated')
+    console.log("Bob sees he has been signalled an updated Invite:\n",bob_signal2.payload['data'])
+    console.log(bob_signal2.payload['type'])
+    assert.equal(bob_signal2.payload['type'], 'InvitationUpdated')
   });
 });
 
@@ -180,30 +194,38 @@ test('3. create and update Invite', async () => {
 test('4. create and reject Invite', async () => {
   await runScenario(async scenario => {
    
-    // setup signal handlers
-    let processSignal_alice: AppSignalCb | undefined;
-    let signalReceived_alice = new Promise<AppSignal>((resolve) => {
-      processSignal_alice = (signal) => {
-        console.log("signal found for Alice:",signal)
+    // setup signal receivers
+    let SignalHandler_alice: AppSignalCb | undefined;
+    let signalReceived_alice: Promise<AppSignal>
+    SignalHandler_alice = (signal) => {
+      console.log("signal found for Alice:",signal)
+      signalReceived_alice = new Promise<AppSignal>((resolve) => {
         resolve(signal);
-      };
-    });
+      });
+    };
 
-
-    let processSignal_bob: AppSignalCb | undefined;
-    let signalReceived_bob = new Promise<AppSignal>((resolve) => {
-      processSignal_bob = (signal) => {
-        console.log("signal found for bob:",signal)
+    let signalReceived_bob:Promise<AppSignal>
+    let SignalHandler_bob: AppSignalCb | undefined;
+    SignalHandler_bob = (signal) => {
+      console.log("signal found for bob:",signal)
+      signalReceived_bob = new Promise<AppSignal>((resolve) => {
         resolve(signal);
-      };
-    });
+      });
+    };
+    
     const testAppPath = process.cwd() + path_to_happ;
 
     // Add 2 players with the test app to the Scenario.
-    const alice = await scenario.addPlayerWithApp({ path: testAppPath },{signalHandler: processSignal_alice});
-    const bob = await scenario.addPlayerWithApp({ path: testAppPath },{signalHandler: processSignal_bob});
+    const alice = await scenario.addPlayerWithApp({ path: testAppPath })
+    const bob = await scenario.addPlayerWithApp({ path: testAppPath })//,{signalHandler: SignalHandler_bob});
+    
+    //workaround hack to get signals to work
+    const appWs_alice = await alice.conductor.connectAppWs(await alice.conductor.attachAppInterface())
+    appWs_alice.on("signal", SignalHandler_alice);
 
-    // Shortcut peer discovery through gossip and register all agents in every
+    const appWs_bob = await bob.conductor.connectAppWs(await bob.conductor.attachAppInterface())
+    appWs_bob.on("signal", SignalHandler_bob);
+
     // conductor of the scenario.
     await scenario.shareAllAgents();
 
@@ -213,7 +235,7 @@ test('4. create and reject Invite', async () => {
     const invite_detail: InviteInfo = await sendInvitations(alice.cells[0],getSampleInviteInput([bob.agentPubKey]));
     assert.ok(invite_detail);
 
-    await pause(1200);
+    await dhtSync([alice, bob], bob.cells[0].cell_id[0]);
     let bob_signal = await signalReceived_bob
 
     console.log("Bob sees he has been signalled a new Invite:\n",bob_signal.payload['data'])
@@ -223,7 +245,7 @@ test('4. create and reject Invite', async () => {
     const reject: boolean = await rejectInvite(bob.cells[0],bob_signal.payload['data'].invitation_original_hash)
     console.log(reject)
     
-    await pause(1200);
+    await dhtSync([alice, bob], alice.cells[0].cell_id[0]);
     let alice_signal = await signalReceived_alice
 
     assert.equal(alice_signal.payload['type'],'InvitationRejected',"message should be of type rejected")
@@ -241,19 +263,39 @@ test('4. create and reject Invite', async () => {
 test('5. create, reject and clear Invite', async () => {
   await runScenario(async scenario => {
         
-    // setup signal receiver
-    let processSignal_bob: AppSignalCb | undefined;
-    let signalReceived_bob = new Promise<AppSignal>((resolve) => {
-      processSignal_bob = (signal) => {
-        console.log("signal found for bob:",signal)
+    // setup signal receivers
+    let SignalHandler_alice: AppSignalCb | undefined;
+    let signalReceived_alice: Promise<AppSignal>
+    SignalHandler_alice = (signal) => {
+      console.log("signal found for Alice:",signal)
+      signalReceived_alice = new Promise<AppSignal>((resolve) => {
         resolve(signal);
-      };
-    });
+      });
+    };
+
+    let signalReceived_bob:Promise<AppSignal>
+    let SignalHandler_bob: AppSignalCb | undefined;
+    SignalHandler_bob = (signal) => {
+      console.log("signal found for bob:",signal)
+      signalReceived_bob = new Promise<AppSignal>((resolve) => {
+        resolve(signal);
+      });
+    };
+    
     const testAppPath = process.cwd() + path_to_happ;
 
     // Add 2 players with the test app to the Scenario.
-    const alice = await scenario.addPlayerWithApp({ path: testAppPath });
-    const bob = await scenario.addPlayerWithApp({ path: testAppPath },{signalHandler: processSignal_bob});
+    const alice = await scenario.addPlayerWithApp({ path: testAppPath })
+    const bob = await scenario.addPlayerWithApp({ path: testAppPath })//,{signalHandler: SignalHandler_bob});
+    
+    //workaround hack to get signals to work
+    const appWs_alice = await alice.conductor.connectAppWs(await alice.conductor.attachAppInterface())
+    appWs_alice.on("signal", SignalHandler_alice);
+
+    const appWs_bob = await bob.conductor.connectAppWs(await bob.conductor.attachAppInterface())
+    appWs_bob.on("signal", SignalHandler_bob);
+
+    // conductor of the scenario.
     await scenario.shareAllAgents();
 
     console.log("\n************************* START TEST ****************************\n")
@@ -262,7 +304,7 @@ test('5. create, reject and clear Invite', async () => {
     const invite_detail: InviteInfo = await sendInvitations(alice.cells[0],getSampleInviteInput([bob.agentPubKey]));
     assert.ok(invite_detail);
     
-    await pause(1200);
+    await dhtSync([alice, bob], bob.cells[0].cell_id[0]);
     let bob_signal = await signalReceived_bob
 
     console.log("Bob sees he has been signalled a new Invite:\n",bob_signal.payload['data'])
