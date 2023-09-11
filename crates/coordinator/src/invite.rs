@@ -103,10 +103,10 @@ pub fn get_my_pending_invitations(_: ()) -> ExternResult<Option<Vec<InviteInfo>>
 
     let links = get_links(agent, LinkTypes::AgentToInvites, Some(LinkTag::new("Invitee")))?;
     if !links.is_empty(){
-        let original_action_hash = ActionHash::from(links[0].clone().target);
+        let original_action_hash = ActionHash::try_from(links[0].clone().target).unwrap();
         let get_input: Vec<GetInput> = links
             .into_iter()
-            .map(|link| GetInput::new(ActionHash::from(link.target).into(),GetOptions::default()))
+            .map(|link| GetInput::new(ActionHash::try_from(link.target).unwrap().into(),GetOptions::default()))
             .collect();
         let records: Vec<Record> = HDK
             .with(|hdk| hdk.borrow().get(get_input))?
@@ -236,7 +236,7 @@ pub fn get_invitation_info(invite: Record, original_action_hash: &ActionHash) ->
         LinkTypes::InviteToMembers,
         Some(LinkTag::new("Accepted")),
     )?.into_iter()
-    .map(|link| AgentPubKey::from(EntryHash::from(link.target)))
+    .map(|link| AgentPubKey::try_from(link.target).unwrap())
     .collect();
 
     let invitees_who_rejected: Vec<AgentPubKey> = get_links(
@@ -244,7 +244,7 @@ pub fn get_invitation_info(invite: Record, original_action_hash: &ActionHash) ->
         LinkTypes::InviteToMembers,
         Some(LinkTag::new("Rejected")),
     )?.into_iter()
-    .map(|link| AgentPubKey::from(EntryHash::from(link.target)))
+    .map(|link| AgentPubKey::try_from(link.target).unwrap())
     .collect();
         
     return Ok(InviteInfo {

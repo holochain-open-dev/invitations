@@ -1,6 +1,6 @@
 import { assert, test } from "vitest";
 
-import { runScenario, pause, CallableCell } from '@holochain/tryorama';
+import { runScenario, pause, CallableCell, dhtSync } from '@holochain/tryorama';
 import { NewEntryAction, ActionHash, Record, AppBundleSource, fakeDnaHash, fakeActionHash, fakeAgentPubKey, fakeEntryHash, AppSignalCb, AppSignal, RecordEntry } from '@holochain/client';
 import { decode } from '@msgpack/msgpack';
 
@@ -20,8 +20,7 @@ test('1. create and compare invitation lists', async () => {
 
      // Add 2 players with the test app to the Scenario. The returned players
     // can be destructured.
-    const [alice] = await scenario.addPlayersWithApps([appSource_alice]);
-    const [bob] = await scenario.addPlayersWithApps([appSource_bob]);
+    const [alice,bob] = await scenario.addPlayersWithApps([appSource_alice,appSource_bob]);
 
     // Shortcut peer discovery through gossip and register all agents in every
     // conductor of the scenario.
@@ -54,7 +53,7 @@ test('2. create and accept Invite', async () => {
     
     // setup signal receivers
     let processSignal_alice: AppSignalCb | undefined;
-    let signalReceived_alice = new Promise<AppSignal>((resolve) => {
+    const signalReceived_alice = new Promise<AppSignal>((resolve) => {
       processSignal_alice = (signal) => {
         console.log("signal found for Alice:",signal)
         resolve(signal);
@@ -62,32 +61,22 @@ test('2. create and accept Invite', async () => {
     });
 
     let processSignal_bob: AppSignalCb | undefined;
-    let signalReceived_bob = new Promise<AppSignal>((resolve) => {
+    const signalReceived_bob = new Promise<AppSignal>((resolve) => {
       processSignal_bob = (signal) => {
         console.log("signal found for bob:",signal)
         resolve(signal);
       };
     });
     
-    // Construct proper paths for your app.
-    // This assumes app bundle created by the `hc app pack` command.
     const testAppPath = process.cwd() + path_to_happ;
 
-    // Set up the app to be installed 
-    const appSource_alice = { appBundleSource: { path: testAppPath }}//, options: {signalHandler: processSignal_alice} };
-    const appSource_bob = { appBundleSource: { path: testAppPath }}
+    // Add 2 players with the test app to the Scenario.
+    const alice = await scenario.addPlayerWithApp({ path: testAppPath },{signalHandler: processSignal_alice});
+    const bob = await scenario.addPlayerWithApp({ path: testAppPath },{signalHandler: processSignal_bob});
+    //old code
+    //alice.conductor.appWs().on("signal",processSignal_alice)
+    //bob.conductor.appWs().on("signal",processSignal_bob)
 
-
-    // Add 2 players with the test app to the Scenario. The returned players
-    // can be destructured.
-    const [alice] = await scenario.addPlayersWithApps([appSource_alice]);
-    const [bob] = await scenario.addPlayersWithApps([appSource_bob]);
-
-    alice.conductor.appWs().on("signal",processSignal_alice)
-    bob.conductor.appWs().on("signal",processSignal_bob)
-
-    // Shortcut peer discovery through gossip and register all agents in every
-    // conductor of the scenario.
     await scenario.shareAllAgents();
 
     console.log("\n************************* START TEST ****************************\n")
@@ -95,7 +84,7 @@ test('2. create and accept Invite', async () => {
     const invite_detail: InviteInfo = await sendInvitations(alice.cells[0],getSampleInviteInput([bob.agentPubKey]));
     assert.ok(invite_detail);
 
-    await pause(1200);
+    await dhtSync([alice, bob], bob.cells[0].cell_id[0]);
     const bob_signal = await signalReceived_bob
     
     console.log("Bob sees he has been signalled a new Invite:\n",bob_signal.payload['data'])
@@ -106,7 +95,7 @@ test('2. create and accept Invite', async () => {
     console.log(result)
     assert.isTrue(result)
 
-    await pause(1200);
+    await dhtSync([alice, bob], alice.cells[0].cell_id[0]);
     let alice_signal = await signalReceived_alice
 
     assert.equal(alice_signal.payload['type'],'InvitationAccepted',"message should be of type accepted")
@@ -142,25 +131,12 @@ test('3. create and update Invite', async () => {
       };
     });
 
-    // Construct proper paths for your app.
-    // This assumes app bundle created by the `hc app pack` command.
     const testAppPath = process.cwd() + path_to_happ;
 
-    // Set up the app to be installed 
-    const appSource_alice = { appBundleSource: { path: testAppPath }}
-    const appSource_bob = { appBundleSource: { path: testAppPath }}
+    // Add 2 players with the test app to the Scenario.
+    const alice = await scenario.addPlayerWithApp({ path: testAppPath },{signalHandler: processSignal_alice});
+    const bob = await scenario.addPlayerWithApp({ path: testAppPath },{signalHandler: processSignal_bob});
 
-    // Add 2 players with the test app to the Scenario. The returned players
-    // can be destructured.
-    const [alice] = await scenario.addPlayersWithApps([appSource_alice]);
-    const [bob] = await scenario.addPlayersWithApps([appSource_bob]);
-
-    //setup signal handling
-    alice.conductor.appWs().on("signal",processSignal_alice)
-    bob.conductor.appWs().on("signal",processSignal_bob)
-
-    // Shortcut peer discovery through gossip and register all agents in every
-    // conductor of the scenario.
     await scenario.shareAllAgents();
 
     console.log("\n************************* START TEST ****************************\n")
@@ -221,22 +197,11 @@ test('4. create and reject Invite', async () => {
         resolve(signal);
       };
     });
-    // Construct proper paths for your app.
-    // This assumes app bundle created by the `hc app pack` command.
     const testAppPath = process.cwd() + path_to_happ;
 
-    // Set up the app to be installed 
-    const appSource_alice = { appBundleSource: { path: testAppPath }}
-    const appSource_bob = { appBundleSource: { path: testAppPath }}
-
-    // Add 2 players with the test app to the Scenario. The returned players
-    // can be destructured.
-    const [alice] = await scenario.addPlayersWithApps([appSource_alice]);
-    const [bob] = await scenario.addPlayersWithApps([appSource_bob]);
-
-    //setup signal handling
-    alice.conductor.appWs().on("signal",processSignal_alice)
-    bob.conductor.appWs().on("signal",processSignal_bob)
+    // Add 2 players with the test app to the Scenario.
+    const alice = await scenario.addPlayerWithApp({ path: testAppPath },{signalHandler: processSignal_alice});
+    const bob = await scenario.addPlayerWithApp({ path: testAppPath },{signalHandler: processSignal_bob});
 
     // Shortcut peer discovery through gossip and register all agents in every
     // conductor of the scenario.
@@ -284,25 +249,11 @@ test('5. create, reject and clear Invite', async () => {
         resolve(signal);
       };
     });
-
-    // Construct proper paths for your app.
-    // This assumes app bundle created by the `hc app pack` command.
     const testAppPath = process.cwd() + path_to_happ;
 
-    // Set up the app to be installed 
-    const appSource_alice = { appBundleSource: { path: testAppPath }}
-    const appSource_bob = { appBundleSource: { path: testAppPath }}
-
-    // Add 2 players with the test app to the Scenario. The returned players
-    // can be destructured.
-    const [alice] = await scenario.addPlayersWithApps([appSource_alice]);
-    const [bob] = await scenario.addPlayersWithApps([appSource_bob]);
-
-    //setup signal handling
-    bob.conductor.appWs().on("signal",processSignal_bob)
-
-    // Shortcut peer discovery through gossip and register all agents in every
-    // conductor of the scenario.
+    // Add 2 players with the test app to the Scenario.
+    const alice = await scenario.addPlayerWithApp({ path: testAppPath });
+    const bob = await scenario.addPlayerWithApp({ path: testAppPath },{signalHandler: processSignal_bob});
     await scenario.shareAllAgents();
 
     console.log("\n************************* START TEST ****************************\n")
