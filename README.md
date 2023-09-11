@@ -1,4 +1,4 @@
-# Invitations
+# Invitations (HDK 0.1x)
 
 A module for creating and managing individual or group invitations, can be used in calendars and team coordination
 
