@@ -1,5 +1,5 @@
-# Invitations Module
+# Invitations DNA
 
-A module for creating and managing individual/group invitations
+A zome for creating and managing group invitations
 
 ## crate only import
