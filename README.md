@@ -1,5 +1,5 @@
-# Invitations DNA
+# Invitations DNA (HDK 0.2x)
 
-A zome for creating and managing group invitations
+A module for creating and managing group invitations
 
 ## crate only import
