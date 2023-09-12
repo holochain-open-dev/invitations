@@ -10,8 +10,8 @@ resolver ="2"
 members = ["crates/integrity", "crates/coordinator"]
 
 [workspace.dependencies]
-hdi = "=0.3"
-hdk = "=0.2"
+hdi = "0.3"
+hdk = "0.2"
 serde = "=1.0.163"
 
 [workspace.dependencies.hc_coordinator_zome_invitations]

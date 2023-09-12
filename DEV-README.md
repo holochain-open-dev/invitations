@@ -8,7 +8,7 @@ run `nix develop`, `npm install` and `npm test` in the root folder of repository
 
 ## Project Installation and usage
 
-we assume you have an existing project, otherwise see instrctions about scaffolding a web template here:
+we assume you have an existing project, otherwise see instructions about scaffolding a web template here:
 https://github.com/holochain-open-dev/templates
 
 ### Including the module in your project
@@ -41,7 +41,9 @@ extern crate hc_integrity_zome_invitations;
 extern crate hc_coordinator_zome_invitations;
 ```
 
-you toml dependencies should looking something like this
+we specify a crates-only branch which uses the latest stable release of holochain. 
+For older versions set the branch to crates-only-[ver] where [ver] is the version series eg 0.1x 
+you toml dependencies should look something like this
 
 ```toml 
 [dependencies]

@@ -1,6 +1,6 @@
 ---
 manifest_version: "1"
-name: invitations-test
+name: invitations
 integrity:
   network_seed: ~
   properties: ~

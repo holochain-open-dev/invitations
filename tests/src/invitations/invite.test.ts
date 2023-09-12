@@ -6,7 +6,7 @@ import { decode } from '@msgpack/msgpack';
 
 import { acceptInvite, clearInvite, getPendingInvites, getSampleInviteInput, getSampleInviteInputUpdate, InviteInfo, rejectInvite, sendInvitations, updateInvitation } from './common.js';
 
-const path_to_happ = '/../workdir/happ/invitations-test.happ'
+const path_to_happ = '/../workdir/happ/invitations.happ'
 
 test('1. create and compare invitation lists', async () => {
   await runScenario(async scenario => {
