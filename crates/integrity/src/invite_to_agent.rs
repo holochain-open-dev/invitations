@@ -1,7 +1,7 @@
 use hdi::prelude::*;
 use crate::Invite;
 
-pub fn validate_create_link_invite_to_members(
+pub fn validate_create_link_invite_to_agent(
     _action: CreateLink,
     base_address: AnyLinkableHash,
     _target_address: AnyLinkableHash,
@@ -24,13 +24,13 @@ pub fn validate_create_link_invite_to_members(
         )?;
     Ok(ValidateCallbackResult::Valid)
 }
-pub fn validate_delete_link_invite_to_members(
+pub fn validate_delete_link_invite_to_agent(
     _action: DeleteLink,
     _original_action: CreateLink,
     _base: AnyLinkableHash,
     _target: AnyLinkableHash,
     _tag: LinkTag,
 ) -> ExternResult<ValidateCallbackResult> {
-    // TODO: add the appropriate validation rules
-    Ok(ValidateCallbackResult::Valid)
+    Ok(ValidateCallbackResult::Invalid("Deleting links is not allowed".into()))
+
 }

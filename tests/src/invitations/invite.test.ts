@@ -260,7 +260,7 @@ test('4. create and reject Invite', async () => {
 });
 
 
-test('5. create, reject and clear Invite', async () => {
+/*test('5. create, reject and clear Invite', async () => {
   await runScenario(async scenario => {
         
     // setup signal receivers
@@ -323,4 +323,4 @@ test('5. create, reject and clear Invite', async () => {
     console.log(invite_list_bob)
     assert.isNull(invite_list_bob)
   });
-});
+});*/

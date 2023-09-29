@@ -1,7 +1,7 @@
-pub mod invite_to_members;
-pub use invite_to_members::*;
-pub mod agent_to_invites;
-pub use agent_to_invites::*;
+pub mod invite_to_agent;
+pub use invite_to_agent::*;
+pub mod agent_to_invite;
+pub use agent_to_invite::*;
 pub mod invite;
 pub use invite::*;
 use hdi::prelude::*;
@@ -15,8 +15,8 @@ pub enum EntryTypes {
 #[derive(Serialize, Deserialize)]
 #[hdk_link_types]
 pub enum LinkTypes {
-    AgentToInvites,
-    InviteToMembers,
+    AgentToInvite,
+    InviteToAgent,
 }
 #[hdk_extern]
 pub fn genesis_self_check(
@@ -111,16 +111,16 @@ pub fn validate(op: Op) -> ExternResult<ValidateCallbackResult> {
             action,
         } => {
             match link_type {
-                LinkTypes::AgentToInvites => {
-                    validate_create_link_agent_to_invites(
+                LinkTypes::AgentToInvite => {
+                    validate_create_link_agent_to_invite(
                         action,
                         base_address,
                         target_address,
                         tag,
                     )
                 }
-                LinkTypes::InviteToMembers => {
-                    validate_create_link_invite_to_members(
+                LinkTypes::InviteToAgent => {
+                    validate_create_link_invite_to_agent(
                         action,
                         base_address,
                         target_address,
@@ -138,8 +138,8 @@ pub fn validate(op: Op) -> ExternResult<ValidateCallbackResult> {
             action,
         } => {
             match link_type {
-                LinkTypes::AgentToInvites => {
-                    validate_delete_link_agent_to_invites(
+                LinkTypes::AgentToInvite => {
+                    validate_delete_link_agent_to_invite(
                         action,
                         original_action,
                         base_address,
@@ -147,8 +147,8 @@ pub fn validate(op: Op) -> ExternResult<ValidateCallbackResult> {
                         tag,
                     )
                 }
-                LinkTypes::InviteToMembers => {
-                    validate_delete_link_invite_to_members(
+                LinkTypes::InviteToAgent => {
+                    validate_delete_link_invite_to_agent(
                         action,
                         original_action,
                         base_address,
@@ -293,16 +293,16 @@ pub fn validate(op: Op) -> ExternResult<ValidateCallbackResult> {
                     action,
                 } => {
                     match link_type {
-                        LinkTypes::AgentToInvites => {
-                            validate_create_link_agent_to_invites(
+                        LinkTypes::AgentToInvite => {
+                            validate_create_link_agent_to_invite(
                                 action,
                                 base_address,
                                 target_address,
                                 tag,
                             )
                         }
-                        LinkTypes::InviteToMembers => {
-                            validate_create_link_invite_to_members(
+                        LinkTypes::InviteToAgent => {
+                            validate_create_link_invite_to_agent(
                                 action,
                                 base_address,
                                 target_address,
@@ -334,8 +334,8 @@ pub fn validate(op: Op) -> ExternResult<ValidateCallbackResult> {
                         }
                     };
                     match link_type {
-                        LinkTypes::AgentToInvites => {
-                            validate_delete_link_agent_to_invites(
+                        LinkTypes::AgentToInvite => {
+                            validate_delete_link_agent_to_invite(
                                 action,
                                 create_link.clone(),
                                 base_address,
@@ -343,8 +343,8 @@ pub fn validate(op: Op) -> ExternResult<ValidateCallbackResult> {
                                 create_link.tag,
                             )
                         }
-                        LinkTypes::InviteToMembers => {
-                            validate_delete_link_invite_to_members(
+                        LinkTypes::InviteToAgent => {
+                            validate_delete_link_invite_to_agent(
                                 action,
                                 create_link.clone(),
                                 base_address,

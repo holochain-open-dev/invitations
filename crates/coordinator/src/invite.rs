@@ -43,7 +43,7 @@ fn create_invitation(input: InviteInput) -> ExternResult<InviteInfo> {
     create_link(
         agent_pub_key.clone(),
         action_hash.clone(),
-        LinkTypes::AgentToInvites,
+        LinkTypes::AgentToInvite,
         LinkTag::new(String::from("Invitee")),
     )?;
 
@@ -51,7 +51,7 @@ fn create_invitation(input: InviteInput) -> ExternResult<InviteInfo> {
         create_link(
             agent,
             action_hash.clone(),
-            LinkTypes::AgentToInvites,
+            LinkTypes::AgentToInvite,
             LinkTag::new(String::from("Invitee")),
         )?;
     }
@@ -101,7 +101,7 @@ pub fn get_my_pending_invitations(_: ()) -> ExternResult<Option<Vec<InviteInfo>>
     let agent: AgentPubKey = agent_info()?.agent_latest_pubkey;
     let mut pending_invitations: Vec<InviteInfo> = vec![];
 
-    let links = get_links(agent, LinkTypes::AgentToInvites, Some(LinkTag::new("Invitee")))?;
+    let links = get_links(agent, LinkTypes::AgentToInvite, Some(LinkTag::new("Invitee")))?;
     if !links.is_empty(){
         let original_action_hash = ActionHash::try_from(links[0].clone().target).unwrap();
         let get_input: Vec<GetInput> = links
@@ -146,7 +146,7 @@ pub fn accept_invitation(original_action_hash: ActionHash) -> ExternResult<bool>
         create_link(
             entry_info.invitation_original_hash.clone(), //action hash
             my_pub_key.clone(),
-            LinkTypes::InviteToMembers,
+            LinkTypes::InviteToAgent,
             LinkTag::new(String::from("Accepted")),
         )?;
         return Ok(true)
@@ -176,7 +176,7 @@ pub fn reject_invitation(original_action_hash: ActionHash) -> ExternResult<bool>
         create_link(
             entry_info.invitation_original_hash,
             my_pub_key,
-            LinkTypes::InviteToMembers,
+            LinkTypes::InviteToAgent,
             LinkTag::new(String::from("Rejected")),
         )?;
         return Ok(true)
@@ -190,7 +190,7 @@ pub fn reject_invitation(original_action_hash: ActionHash) -> ExternResult<bool>
 pub fn clear_invitation(original_action_hash: ActionHash) -> ExternResult<bool> {
     let links = get_links(
         agent_info()?.agent_latest_pubkey, 
-        LinkTypes::AgentToInvites,
+        LinkTypes::AgentToInvite,
         Some(LinkTag::new("Invitee")),
     )?;
 
@@ -233,7 +233,7 @@ pub fn get_invitation_info(invite: Record, original_action_hash: &ActionHash) ->
     
     let invitees_who_accepted: Vec<AgentPubKey> = get_links(
         original_action_hash.clone(),
-        LinkTypes::InviteToMembers,
+        LinkTypes::InviteToAgent,
         Some(LinkTag::new("Accepted")),
     )?.into_iter()
     .map(|link| AgentPubKey::try_from(link.target).unwrap())
@@ -241,7 +241,7 @@ pub fn get_invitation_info(invite: Record, original_action_hash: &ActionHash) ->
 
     let invitees_who_rejected: Vec<AgentPubKey> = get_links(
         original_action_hash.clone(),
-        LinkTypes::InviteToMembers,
+        LinkTypes::InviteToAgent,
         Some(LinkTag::new("Rejected")),
     )?.into_iter()
     .map(|link| AgentPubKey::try_from(link.target).unwrap())
