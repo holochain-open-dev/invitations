@@ -36,7 +36,7 @@ export function getSampleInviteInputUpdate(inviteesInput: AgentPubKey[], origina
 export async function sendInvitations(cell: CallableCell, invitation:InviteInput): Promise<InviteInfo> {
   return cell.callZome({
     zome_name: "invitations",
-    fn_name: "send_invitations",
+    fn_name: "create_invitation",
     payload: invitation,
   });
 }

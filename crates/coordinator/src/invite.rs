@@ -20,7 +20,7 @@ pub struct InviteInfo {
 }
 
 #[hdk_extern]
-fn send_invitations(input: InviteInput) -> ExternResult<InviteInfo> {
+fn create_invitation(input: InviteInput) -> ExternResult<InviteInfo> {
   let agent_pub_key: AgentPubKey = agent_info()?.agent_latest_pubkey;
 
   let invitation = Invite {
