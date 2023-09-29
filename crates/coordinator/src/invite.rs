@@ -1,5 +1,7 @@
 use hdk::prelude::*;
 use hc_integrity_zome_invitations::*;
+use std::collections::BTreeMap;
+
 
 #[derive(Clone, Debug, Serialize, Deserialize, SerializedBytes)]
 pub struct InviteInput {
@@ -7,6 +9,7 @@ pub struct InviteInput {
     pub location: Option<String>,
     pub start_time: Option<Timestamp>,
     pub end_time: Option<Timestamp>,
+    pub details: Option<BTreeMap<String,String>>,
     pub original_hash: Option<ActionHash>
 }
 
@@ -29,6 +32,7 @@ fn create_invitation(input: InviteInput) -> ExternResult<InviteInfo> {
       location: input.location,
       start_time: input.start_time,
       end_time: input.end_time,
+      details: input.details,
       timestamp: sys_time()?
     };
 
@@ -90,6 +94,7 @@ pub fn update_invitation(invitation: InviteInput) -> ExternResult<bool> {
         location: invitation.location, 
         start_time: invitation.start_time,
         end_time: invitation.end_time,
+        details: invitation.details,
         timestamp: sys_time()?
       };
     update_entry(last_invite_record.action_address().clone(), &updated_invite)?;
