@@ -28,7 +28,7 @@ test('1. create and compare invitation lists', async () => {
     console.log("\n************************* START TEST ****************************\n")
 
     console.log("\nAlice creates an Invite")
-    const invite_detail: InviteInfo = await sendInvitations(alice.cells[0], getSampleInviteInput([bob.agentPubKey]));
+    const invite_detail: InviteInfo = await sendInvitations(alice.cells[0], getSampleInviteInput([bob.agentPubKey,alice.agentPubKey]));
     //console.log(invite_detail)//decode((record.entry as any).Present.entry as any))
     assert.ok(invite_detail);
 
@@ -87,7 +87,7 @@ test('2. create and accept Invite', async () => {
 
     console.log("\n************************* START TEST ****************************\n")
     console.log("\nAlice creates an Invite to Bob\n")
-    const invite_detail: InviteInfo = await sendInvitations(alice.cells[0],getSampleInviteInput([bob.agentPubKey]));
+    const invite_detail: InviteInfo = await sendInvitations(alice.cells[0],getSampleInviteInput([bob.agentPubKey,alice.agentPubKey]));
     assert.ok(invite_detail);
 
     await dhtSync([alice, bob], bob.cells[0].cell_id[0]);
@@ -155,7 +155,7 @@ test('3. create and update Invite', async () => {
     console.log("\n************************* START TEST ****************************\n")
 
     console.log("\nAlice creates an Invite to Bob\n")
-    const invite_detail: InviteInfo = await sendInvitations(alice.cells[0],getSampleInviteInput([bob.agentPubKey]));
+    const invite_detail: InviteInfo = await sendInvitations(alice.cells[0],getSampleInviteInput([bob.agentPubKey,alice.agentPubKey]));
     assert.ok(invite_detail);
 
     await dhtSync([alice, bob], bob.cells[0].cell_id[0]);
@@ -176,7 +176,7 @@ test('3. create and update Invite', async () => {
     assert.deepEqual(invitees[0], bob.agentPubKey, "Bob was not found in the accepted invitees")
 
     console.log("Alice sees Bob has accepted the invite via a signal and decides to update the invite location and start_time\n")
-    let inviteUpdate = getSampleInviteInputUpdate([bob.agentPubKey], alice_signal.payload['data'].invitation_original_hash)
+    let inviteUpdate = getSampleInviteInputUpdate([bob.agentPubKey,alice.agentPubKey], alice_signal.payload['data'].invitation_original_hash)
     const invite_list_alice: InviteInfo = await updateInvitation(alice.cells[0],inviteUpdate)
     console.log(invite_list_alice)
     
@@ -232,7 +232,7 @@ test('4. create and reject Invite', async () => {
     console.log("\n************************* START TEST ****************************\n")
 
     console.log("\nAlice creates an Invite to Bob\n")
-    const invite_detail: InviteInfo = await sendInvitations(alice.cells[0],getSampleInviteInput([bob.agentPubKey]));
+    const invite_detail: InviteInfo = await sendInvitations(alice.cells[0],getSampleInviteInput([bob.agentPubKey,alice.agentPubKey]));
     assert.ok(invite_detail);
 
     await dhtSync([alice, bob], bob.cells[0].cell_id[0]);

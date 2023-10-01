@@ -24,7 +24,13 @@ pub fn validate_update_invite(
     _original_action: EntryCreationAction,
     _original_invite: Invite,
 ) -> ExternResult<ValidateCallbackResult> {
-    Ok(ValidateCallbackResult::Valid)
+    if _original_action.author() == &_action.author 
+        && _original_invite.inviter == _invite.inviter
+        && _action.author == _invite.inviter {
+        Ok(ValidateCallbackResult::Valid)
+    } else {
+        Ok(ValidateCallbackResult::Invalid("Only the author of the invitation can make updates".into()))
+    }
 }
 pub fn validate_delete_invite(
     _action: Delete,

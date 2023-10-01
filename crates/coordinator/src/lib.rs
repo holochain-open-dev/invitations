@@ -62,10 +62,10 @@ fn signal_action(action: SignedActionHashed) -> ExternResult<()> {
             if let Ok(Some(link_type)) = LinkTypes::from_type(create_link.zome_index, create_link.link_type) {
                 if link_type == LinkTypes::InviteToAgent {
                     let invite_entry_info = get_invitation_detail_by_link_target(create_link.base_address)?;
-                    if create_link.tag == LinkTag::new("Accepted") {
+                    if create_link.tag == LinkTag::new("accepted") {
                         signals::invitation_accepted(action, invite_entry_info)?;
                     }
-                    else if create_link.tag == LinkTag::new("Rejected") {
+                    else if create_link.tag == LinkTag::new("rejected") {
                         signals::invitation_rejected(action, invite_entry_info)?;
                     } 
                 }

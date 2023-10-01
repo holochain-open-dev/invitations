@@ -32,5 +32,9 @@ pub fn validate_delete_link_agent_to_invite(
     _target: AnyLinkableHash,
     _tag: LinkTag,
 ) -> ExternResult<ValidateCallbackResult> {
-    Ok(ValidateCallbackResult::Invalid("Deleting links is not allowed".into()))
+    //if _tag.ne(&LinkTag::new("pending")){
+    //Ok(ValidateCallbackResult::Invalid("Only pending links can be removed".into()))
+    //} else {
+        Ok(ValidateCallbackResult::Valid)
+    //}
 }

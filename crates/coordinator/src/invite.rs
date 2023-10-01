@@ -18,16 +18,19 @@ pub struct InviteInput {
 pub struct InviteInfo {
     pub invitation: Invite,
     pub invitation_original_hash: ActionHash,
+   // pub timestamp: Timestamp,
+   // pub author: AgentPubKey,
     pub invitees_who_accepted: Vec<AgentPubKey>,
     pub invitees_who_rejected: Vec<AgentPubKey>,
+    pub invitees_pending:Vec<AgentPubKey>,
 }
 
 #[hdk_extern]
 fn create_invitation(input: InviteInput) -> ExternResult<InviteInfo> {
-  let agent_pub_key: AgentPubKey = agent_info()?.agent_latest_pubkey;
+  let my_pub_key: AgentPubKey = agent_info()?.agent_latest_pubkey;
 
   let invitation = Invite {
-      inviter: AgentPubKey::from(agent_pub_key.clone()),
+      inviter: AgentPubKey::from(my_pub_key.clone()),
       invitees: input.invitees.clone(),
       location: input.location,
       start_time: input.start_time,
@@ -37,30 +40,28 @@ fn create_invitation(input: InviteInput) -> ExternResult<InviteInfo> {
     };
 
     let action_hash = create_entry(&EntryTypes::Invite(invitation.clone()))?;
-    let record: Record = get(action_hash.clone(), GetOptions::default())?
-        .ok_or(
-            wasm_error!(
-                WasmErrorInner::Guest(String::from("Could not find the newly created Invitation"))
-            ),
-        )?;
+    let record: Record = get(action_hash.clone(), GetOptions::default())?.ok_or(wasm_error!(WasmErrorInner::Memory))?;
 
-    create_link(
-        agent_pub_key.clone(),
-        action_hash.clone(),
-        LinkTypes::AgentToInvite,
-        LinkTag::new(String::from("Invitee")),
-    )?;
-
-   for agent in input.invitees.clone().into_iter() {
+   for agent in input.invitees.clone().into_iter(){
         create_link(
             agent,
             action_hash.clone(),
             LinkTypes::AgentToInvite,
-            LinkTag::new(String::from("Invitee")),
+            LinkTag::new(String::from("pending")),
+        )?;
+    }
+
+    if !input.invitees.contains(&my_pub_key){
+        create_link(
+            my_pub_key.clone(),
+            action_hash.clone(),
+            LinkTypes::AgentToInvite,
+            LinkTag::new(String::from("inviter")),
         )?;
     }
     return Ok(get_invitation_info(record, &action_hash)?);
 }
+
 
 #[hdk_extern]
 pub fn update_invitation(invitation: InviteInput) -> ExternResult<bool> {
@@ -101,29 +102,27 @@ pub fn update_invitation(invitation: InviteInput) -> ExternResult<bool> {
     return Ok(true);
 }
 
+
 #[hdk_extern]
 pub fn get_my_pending_invitations(_: ()) -> ExternResult<Option<Vec<InviteInfo>>> {
     let agent: AgentPubKey = agent_info()?.agent_latest_pubkey;
-    let mut pending_invitations: Vec<InviteInfo> = vec![];
-
-    let links = get_links(agent, LinkTypes::AgentToInvite, Some(LinkTag::new("Invitee")))?;
+    let links = get_links(agent, LinkTypes::AgentToInvite, Some(LinkTag::new("pending")))?;
     if !links.is_empty(){
-        let original_action_hash = ActionHash::try_from(links[0].clone().target).unwrap();
-        let get_input: Vec<GetInput> = links
-            .into_iter()
-            .map(|link| GetInput::new(ActionHash::try_from(link.target).unwrap().into(),GetOptions::default()))
-            .collect();
-        let records: Vec<Record> = HDK
-            .with(|hdk| hdk.borrow().get(get_input))?
-            .into_iter()
-            .filter_map(|r| r)
-            .collect();
-
-        for record in records.into_iter() {
-            let invitation_info = get_invitation_info(record,&original_action_hash);
-            pending_invitations.push(invitation_info?); 
-        }
+        let pending_invitations = get_invite_info_from_links(links)?;
         Ok(Some(pending_invitations))
+    }else {
+        Ok(None)
+    }
+}
+
+
+#[hdk_extern]
+pub fn get_all_my_invitations(_: ()) -> ExternResult<Option<Vec<InviteInfo>>> {
+    let agent: AgentPubKey = agent_info()?.agent_latest_pubkey;
+    let links = get_links(agent, LinkTypes::AgentToInvite,None)?;
+    if !links.is_empty(){
+        let all_invitations = get_invite_info_from_links(links)?;
+        Ok(Some(all_invitations))
     }else {
         Ok(None)
     }
@@ -148,17 +147,19 @@ pub fn accept_invitation(original_action_hash: ActionHash) -> ExternResult<bool>
         .invitees
         .contains(&AgentPubKey::from(my_pub_key.clone()))
     {
-        create_link(
+         create_link(
             entry_info.invitation_original_hash.clone(), //action hash
             my_pub_key.clone(),
             LinkTypes::InviteToAgent,
-            LinkTag::new(String::from("Accepted")),
+            LinkTag::new(String::from("accepted")),
         )?;
+        commit_invitation(entry_info.invitation_original_hash)?;
         return Ok(true)
     }
 
     return Ok(false)
 }
+
 
 #[hdk_extern]
 pub fn reject_invitation(original_action_hash: ActionHash) -> ExternResult<bool> {
@@ -179,24 +180,49 @@ pub fn reject_invitation(original_action_hash: ActionHash) -> ExternResult<bool>
         .contains(&AgentPubKey::from(my_pub_key.clone()))
     {
         create_link(
-            entry_info.invitation_original_hash,
+            entry_info.invitation_original_hash.clone(),
             my_pub_key,
             LinkTypes::InviteToAgent,
-            LinkTag::new(String::from("Rejected")),
+            LinkTag::new(String::from("rejected")),
         )?;
+        commit_invitation(entry_info.invitation_original_hash)?;
+
         return Ok(true)
     }
 
     return Ok(false)
 }
 
+//helpers
 
-#[hdk_extern]
-pub fn clear_invitation(original_action_hash: ActionHash) -> ExternResult<bool> {
+fn get_invite_info_from_links(links: Vec<Link>) -> ExternResult<Vec<InviteInfo>> {
+    let original_action_hash = ActionHash::try_from(links[0].clone().target).unwrap();
+
+    let get_input: Vec<GetInput> = links
+        .into_iter()
+        .map(|link| GetInput::new(ActionHash::try_from(link.target).unwrap().into(),GetOptions::default()))
+        .collect();
+    let records: Vec<Record> = HDK
+        .with(|hdk| hdk.borrow().get(get_input))?
+        .into_iter()
+        .filter_map(|r| r)
+        .collect();
+
+    let mut invitations: Vec<InviteInfo> = vec![];
+    for record in records.into_iter() {
+        let invitation_info = get_invitation_info(record,&original_action_hash);
+        invitations.push(invitation_info?); 
+    }
+    Ok(invitations)
+}
+
+//no option to update link tags, so we delete and create a new link
+fn commit_invitation(original_action_hash: ActionHash) -> ExternResult<bool> {
+    let my_pub_key: AgentPubKey = agent_info()?.agent_latest_pubkey;
     let links = get_links(
         agent_info()?.agent_latest_pubkey, 
         LinkTypes::AgentToInvite,
-        Some(LinkTag::new("Invitee")),
+        Some(LinkTag::new("pending")),
     )?;
 
     links
@@ -207,11 +233,16 @@ pub fn clear_invitation(original_action_hash: ActionHash) -> ExternResult<bool> 
             Ok(())
         })
         .collect::<ExternResult<Vec<()>>>()?;
-
+    
+    create_link(
+        my_pub_key,
+        original_action_hash.clone(),
+        LinkTypes::AgentToInvite,
+        LinkTag::new(String::from("commited")),
+    )?;
     return Ok(true);
 }
 
-//helpers
 
 fn get_latest_record(action_hash: ActionHash) -> ExternResult<Record> {
     let details = get_details(action_hash, GetOptions::default())?.ok_or(wasm_error!(
@@ -239,7 +270,7 @@ pub fn get_invitation_info(invite: Record, original_action_hash: &ActionHash) ->
     let invitees_who_accepted: Vec<AgentPubKey> = get_links(
         original_action_hash.clone(),
         LinkTypes::InviteToAgent,
-        Some(LinkTag::new("Accepted")),
+        Some(LinkTag::new("accepted")),
     )?.into_iter()
     .map(|link| AgentPubKey::try_from(link.target).unwrap())
     .collect();
@@ -247,16 +278,20 @@ pub fn get_invitation_info(invite: Record, original_action_hash: &ActionHash) ->
     let invitees_who_rejected: Vec<AgentPubKey> = get_links(
         original_action_hash.clone(),
         LinkTypes::InviteToAgent,
-        Some(LinkTag::new("Rejected")),
+        Some(LinkTag::new("rejected")),
     )?.into_iter()
     .map(|link| AgentPubKey::try_from(link.target).unwrap())
     .collect();
-        
+
+    let mut invitees_pending: Vec<AgentPubKey> = invitation_entry.invitees.clone();
+    invitees_pending.retain(|x| !invitees_who_accepted.contains(&x) && !invitees_who_rejected.contains(&x));
+   
     return Ok(InviteInfo {
         invitation: invitation_entry.clone(),
         invitation_original_hash: original_action_hash.clone(),
         invitees_who_accepted,
-        invitees_who_rejected
+        invitees_who_rejected,
+        invitees_pending
     })
 }
 

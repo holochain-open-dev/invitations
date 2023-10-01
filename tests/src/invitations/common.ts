@@ -15,7 +15,9 @@ export type InviteInfo = {
   invitation: Invite,
   invitation_creation_hash: ActionHash,
   invitees_who_accepted: AgentPubKey[],
-  invitees_who_rejected: AgentPubKey[]
+  invitees_who_rejected: AgentPubKey[],
+  invitees_pending: AgentPubKey[]
+
 }
 
 export type InviteInput = {
@@ -55,6 +57,14 @@ export async function getPendingInvites(cell: CallableCell): Promise<InviteInfo[
   return cell.callZome({
     zome_name: "invitations",
     fn_name: "get_my_pending_invitations",
+    payload: null
+  });
+}
+
+export async function getAllInvites(cell: CallableCell): Promise<InviteInfo[]> {
+  return cell.callZome({
+    zome_name: "invitations",
+    fn_name: "get_all_my_invitations",
     payload: null
   });
 }
