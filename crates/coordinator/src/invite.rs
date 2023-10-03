@@ -18,8 +18,8 @@ pub struct InviteInput {
 pub struct InviteInfo {
     pub invitation: Invite,
     pub invitation_original_hash: ActionHash,
-   // pub timestamp: Timestamp,
-   // pub author: AgentPubKey,
+    //pub timestamp: Timestamp,
+    //pub author: AgentPubKey,
     pub invitees_who_accepted: Vec<AgentPubKey>,
     pub invitees_who_rejected: Vec<AgentPubKey>,
     pub invitees_pending:Vec<AgentPubKey>,
@@ -40,7 +40,6 @@ fn create_invitation(input: InviteInput) -> ExternResult<InviteInfo> {
     };
 
     let action_hash = create_entry(&EntryTypes::Invite(invitation.clone()))?;
-    let record: Record = get(action_hash.clone(), GetOptions::default())?.ok_or(wasm_error!(WasmErrorInner::Memory))?;
 
    for agent in input.invitees.clone().into_iter(){
         create_link(
@@ -51,6 +50,7 @@ fn create_invitation(input: InviteInput) -> ExternResult<InviteInfo> {
         )?;
     }
 
+    //creator of the invitation is not an invitee
     if !input.invitees.contains(&my_pub_key){
         create_link(
             my_pub_key.clone(),
@@ -59,13 +59,12 @@ fn create_invitation(input: InviteInput) -> ExternResult<InviteInfo> {
             LinkTag::new(String::from("inviter")),
         )?;
     }
-    return Ok(get_invitation_info(record, &action_hash)?);
+    return Ok(get_invitation_info(&action_hash)?);
 }
 
 
 #[hdk_extern]
-pub fn update_invitation(invitation: InviteInput) -> ExternResult<bool> {
-    let my_pub_key = agent_info()?.agent_latest_pubkey;
+pub fn update_invitation(invitation: InviteInput) -> ExternResult<ActionHash> {
 
     let hash_result = match invitation.original_hash {
         Some(hash) => hash,
@@ -83,12 +82,6 @@ pub fn update_invitation(invitation: InviteInput) -> ExternResult<bool> {
             "Previous invite is malformed".to_string()
         )))?;
 
-    if my_pub_key != last_invite.inviter{
-        return Err(wasm_error!(WasmErrorInner::Guest(
-            "Only the author can update an invite".into(),
-        )))?;
-    }
-
     let updated_invite = Invite {
         inviter: last_invite.inviter,
         invitees: invitation.invitees.clone(), //change invitees
@@ -98,8 +91,8 @@ pub fn update_invitation(invitation: InviteInput) -> ExternResult<bool> {
         details: invitation.details,
         timestamp: sys_time()?
       };
-    update_entry(last_invite_record.action_address().clone(), &updated_invite)?;
-    return Ok(true);
+    let update_hash = update_entry(last_invite_record.action_address().clone(), &updated_invite)?;
+    return Ok(update_hash);
 }
 
 
@@ -107,12 +100,7 @@ pub fn update_invitation(invitation: InviteInput) -> ExternResult<bool> {
 pub fn get_my_pending_invitations(_: ()) -> ExternResult<Option<Vec<InviteInfo>>> {
     let agent: AgentPubKey = agent_info()?.agent_latest_pubkey;
     let links = get_links(agent, LinkTypes::AgentToInvite, Some(LinkTag::new("pending")))?;
-    if !links.is_empty(){
-        let pending_invitations = get_invite_info_from_links(links)?;
-        Ok(Some(pending_invitations))
-    }else {
-        Ok(None)
-    }
+    Ok(get_invite_info_from_links(links)?)
 }
 
 
@@ -120,58 +108,30 @@ pub fn get_my_pending_invitations(_: ()) -> ExternResult<Option<Vec<InviteInfo>>
 pub fn get_all_my_invitations(_: ()) -> ExternResult<Option<Vec<InviteInfo>>> {
     let agent: AgentPubKey = agent_info()?.agent_latest_pubkey;
     let links = get_links(agent, LinkTypes::AgentToInvite,None)?;
-    if !links.is_empty(){
-        let all_invitations = get_invite_info_from_links(links)?;
-        Ok(Some(all_invitations))
-    }else {
-        Ok(None)
-    }
+    Ok(get_invite_info_from_links(links)?)
 }
 
 
 #[hdk_extern]
-pub fn accept_invitation(original_action_hash: ActionHash) -> ExternResult<bool> {
+pub fn accept_invitation(original_action_hash: ActionHash) -> ExternResult<ActionHash> {
     let my_pub_key: AgentPubKey = agent_info()?.agent_latest_pubkey;
-    let record = get(original_action_hash.clone(), GetOptions::default())?
-    .ok_or(
-        wasm_error!(
-            WasmErrorInner::Guest(String::from("Could not find the Invitation action"))
-        ),
+    let entry_info = get_invitation_info( &original_action_hash)?;
+
+    create_link(
+        entry_info.invitation_original_hash.clone(), //action hash
+        my_pub_key.clone(),
+        LinkTypes::InviteToAgent,
+        LinkTag::new(String::from("accepted")),
     )?;
-    let entry_info =
-        get_invitation_info(record.clone(), &original_action_hash)?;
-
-    // we will check if the agent attempting to accept this invitation is an invitee
-    if entry_info
-        .invitation
-        .invitees
-        .contains(&AgentPubKey::from(my_pub_key.clone()))
-    {
-         create_link(
-            entry_info.invitation_original_hash.clone(), //action hash
-            my_pub_key.clone(),
-            LinkTypes::InviteToAgent,
-            LinkTag::new(String::from("accepted")),
-        )?;
-        commit_invitation(entry_info.invitation_original_hash)?;
-        return Ok(true)
-    }
-
-    return Ok(false)
+    let committed_link_hash = commit_invitation(entry_info.invitation_original_hash)?;
+    return Ok(committed_link_hash)
 }
 
 
 #[hdk_extern]
-pub fn reject_invitation(original_action_hash: ActionHash) -> ExternResult<bool> {
+pub fn reject_invitation(original_action_hash: ActionHash) -> ExternResult<ActionHash> {
     let my_pub_key: AgentPubKey = agent_info()?.agent_latest_pubkey;
-    let record = get(original_action_hash.clone(), GetOptions::default())?
-    .ok_or(
-        wasm_error!(
-            WasmErrorInner::Guest(String::from("Could not find the Invitation action"))
-        ),
-    )?;
-    let entry_info =
-        get_invitation_info(record.clone(), &original_action_hash)?;
+    let entry_info = get_invitation_info(&original_action_hash)?;
 
     // we will check if the agent attempting to accept this invitation is an invitee
     if entry_info
@@ -185,39 +145,32 @@ pub fn reject_invitation(original_action_hash: ActionHash) -> ExternResult<bool>
             LinkTypes::InviteToAgent,
             LinkTag::new(String::from("rejected")),
         )?;
-        commit_invitation(entry_info.invitation_original_hash)?;
+        let committed_link_hash = commit_invitation(entry_info.invitation_original_hash)?;
 
-        return Ok(true)
+        return Ok(committed_link_hash)
     }
 
-    return Ok(false)
+    return Err(wasm_error!(WasmErrorInner::Guest("entry not found".to_string())))
 }
 
 //helpers
 
-fn get_invite_info_from_links(links: Vec<Link>) -> ExternResult<Vec<InviteInfo>> {
-    let original_action_hash = ActionHash::try_from(links[0].clone().target).unwrap();
-
-    let get_input: Vec<GetInput> = links
-        .into_iter()
-        .map(|link| GetInput::new(ActionHash::try_from(link.target).unwrap().into(),GetOptions::default()))
-        .collect();
-    let records: Vec<Record> = HDK
-        .with(|hdk| hdk.borrow().get(get_input))?
-        .into_iter()
-        .filter_map(|r| r)
-        .collect();
-
-    let mut invitations: Vec<InviteInfo> = vec![];
-    for record in records.into_iter() {
-        let invitation_info = get_invitation_info(record,&original_action_hash);
-        invitations.push(invitation_info?); 
+fn get_invite_info_from_links(links: Vec<Link>) -> ExternResult<Option<Vec<InviteInfo>>> {
+    //let original_action_hash = ActionHash::try_from(links[0].clone().target).unwrap();
+    if !links.is_empty(){
+        let mut invitations: Vec<InviteInfo> = vec![];
+        for link in links.into_iter() {
+            let original_action_hash = ActionHash::try_from(link.target).unwrap();
+            let invitation_info = get_invitation_info(&original_action_hash);
+            invitations.push(invitation_info?); 
+        }
+        return Ok(Some(invitations))
     }
-    Ok(invitations)
+    Ok(None)
 }
 
 //no option to update link tags, so we delete and create a new link
-fn commit_invitation(original_action_hash: ActionHash) -> ExternResult<bool> {
+fn commit_invitation(original_action_hash: ActionHash) -> ExternResult<ActionHash> {
     let my_pub_key: AgentPubKey = agent_info()?.agent_latest_pubkey;
     let links = get_links(
         agent_info()?.agent_latest_pubkey, 
@@ -234,13 +187,13 @@ fn commit_invitation(original_action_hash: ActionHash) -> ExternResult<bool> {
         })
         .collect::<ExternResult<Vec<()>>>()?;
     
-    create_link(
+    let committed_link = create_link(
         my_pub_key,
         original_action_hash.clone(),
         LinkTypes::AgentToInvite,
         LinkTag::new(String::from("commited")),
     )?;
-    return Ok(true);
+    return Ok(committed_link);
 }
 
 
@@ -260,15 +213,61 @@ fn get_latest_record(action_hash: ActionHash) -> ExternResult<Record> {
     }
 }
 
-pub fn get_invitation_info(invite: Record, original_action_hash: &ActionHash) -> ExternResult<InviteInfo> {
+fn get_first_action_hash_(invite_record:Record) -> ExternResult<ActionHash> {
+    if let ActionType::Create = invite_record.action().action_type(){
+        return Ok(invite_record.action_address().clone())
+    }
+    else {
+        if let Action::Update(update) = invite_record.action(){
+            let previous_record = get(update.original_action_address.clone(),GetOptions::default())?.ok_or(
+                wasm_error!(
+                WasmErrorInner::Guest(String::from("Could not find the Invitation record"))),
+            )?;
+        return get_first_action_hash_(previous_record);
+    } else {
+        Err(wasm_error!(
+            WasmErrorInner::Guest(String::from("something is seriously wrong "))
+        ))
+        }
+    }
+}
+
+pub fn get_invitation_info(original_action_hash: &ActionHash) -> ExternResult<InviteInfo> {
+    let invite = get(original_action_hash.clone(), GetOptions::default())?
+    .ok_or(
+        wasm_error!(
+            WasmErrorInner::Guest(String::from("Could not find the Invitation action"))
+        ),
+    )?;
     let invitation_entry: Invite = invite.entry.clone().to_app_option().map_err(|e| wasm_error!(e))?.ok_or(
         wasm_error!(
             WasmErrorInner::Guest(String::from("Could not find Invitation for hash in invitation details "))
         ),
     )?;
-    
+    return get_invitation_info_details(invitation_entry, original_action_hash)
+}
+
+pub fn get_invitation_update_info(update_action_hash: &ActionHash) -> ExternResult<InviteInfo> {
+    let invite_record = get(update_action_hash.clone(), GetOptions::default())?
+    .ok_or(
+        wasm_error!(
+            WasmErrorInner::Guest(String::from("Could not find the Invitation action"))
+        ),
+    )?;
+    let invite_entry: Invite = invite_record.entry.clone().to_app_option().map_err(|e| wasm_error!(e))?.ok_or(
+        wasm_error!(
+            WasmErrorInner::Guest(String::from("Could not find Invitation for hash in invitation details "))
+        ),
+    )?;
+    //TODO get first hash from update...
+    let first_action_hash = get_first_action_hash_(invite_record)?;
+    return get_invitation_info_details(invite_entry, &first_action_hash)
+}
+
+
+pub fn get_invitation_info_details(invite:Invite, first_action_hash: &ActionHash)-> ExternResult<InviteInfo> {
     let invitees_who_accepted: Vec<AgentPubKey> = get_links(
-        original_action_hash.clone(),
+        first_action_hash.clone(),
         LinkTypes::InviteToAgent,
         Some(LinkTag::new("accepted")),
     )?.into_iter()
@@ -276,51 +275,35 @@ pub fn get_invitation_info(invite: Record, original_action_hash: &ActionHash) ->
     .collect();
 
     let invitees_who_rejected: Vec<AgentPubKey> = get_links(
-        original_action_hash.clone(),
+        first_action_hash.clone(),
         LinkTypes::InviteToAgent,
         Some(LinkTag::new("rejected")),
     )?.into_iter()
     .map(|link| AgentPubKey::try_from(link.target).unwrap())
     .collect();
 
-    let mut invitees_pending: Vec<AgentPubKey> = invitation_entry.invitees.clone();
+    let mut invitees_pending: Vec<AgentPubKey> = invite.invitees.clone();
     invitees_pending.retain(|x| !invitees_who_accepted.contains(&x) && !invitees_who_rejected.contains(&x));
    
     return Ok(InviteInfo {
-        invitation: invitation_entry.clone(),
-        invitation_original_hash: original_action_hash.clone(),
+        invitation: invite.clone(),
+        invitation_original_hash: first_action_hash.clone(),
+        //author: invite_record.action().author().clone(),
+        //git statustimestamp: invite.action().timestamp(), //().clone(),
         invitees_who_accepted,
         invitees_who_rejected,
         invitees_pending
     })
 }
 
-/*fn get_entry_for_action(action_hash: &ActionHash) -> ExternResult<Option<EntryTypes>> {
+//when to use get_details or get for record retrival?
+
+/*fn get_record_for_action(action_hash: &ActionHash) -> ExternResult<Option<Record>> {
     let record = match get_details(action_hash.clone(), GetOptions::default())? {
         Some(Details::Record(record_details)) => record_details.record,
         _ => {
             return Ok(None);
         }
     };
-    let entry = match record.entry().as_option() {
-        Some(entry) => entry,
-        None => {
-            return Ok(None);
-        }
-    };
-    let (zome_index, entry_index) = match record.action().entry_type() {
-        Some(EntryType::App(AppEntryDef { zome_index, entry_index, .. })) => {
-            (zome_index, entry_index)
-        }
-        _ => {
-            return Ok(None);
-        }
-    };
-    Ok(
-        EntryTypes::deserialize_from_type(
-            zome_index.clone(),
-            entry_index.clone(),
-            entry,
-        )?,
-    )
+    return Ok(Some(record))
 }*/

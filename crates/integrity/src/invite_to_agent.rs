@@ -22,7 +22,11 @@ pub fn validate_create_link_invite_to_agent(
                 WasmErrorInner::Guest(String::from("Linked action must reference an entry"))
             ),
         )?;
-    Ok(ValidateCallbackResult::Valid)
+    if !_invite.invitees.contains(&_action.author) {
+        Ok(ValidateCallbackResult::Invalid("only invitees can respond to invites".into()))
+    } else {
+        Ok(ValidateCallbackResult::Valid)
+    }
 }
 pub fn validate_delete_link_invite_to_agent(
     _action: DeleteLink,

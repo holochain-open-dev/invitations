@@ -13,7 +13,7 @@ export type Invite = {
 
 export type InviteInfo = {
   invitation: Invite,
-  invitation_creation_hash: ActionHash,
+  invitation_original_hash: ActionHash,
   invitees_who_accepted: AgentPubKey[],
   invitees_who_rejected: AgentPubKey[],
   invitees_pending: AgentPubKey[]
@@ -33,8 +33,8 @@ export function getSampleInviteInput(inviteesInput: AgentPubKey[]): InviteInput 
   return { invitees: inviteesInput, location: "london" }
 } 
 
-export function getSampleInviteInputUpdate(inviteesInput: AgentPubKey[], original_hash:ActionHash): InviteInput {
-  return { invitees: inviteesInput, location: "Amsterdam", start_time: Date.now(), end_time: Date.now()+86400, original_hash: original_hash}
+export function getSampleInviteInputUpdate(inviteesInput: AgentPubKey[], first_hash:ActionHash): InviteInput {
+  return { invitees: inviteesInput, location: "Amsterdam", start_time: Date.now(), end_time: Date.now()+86400, original_hash: first_hash}
 } 
 
 export async function sendInvitations(cell: CallableCell, invitation:InviteInput): Promise<InviteInfo> {
@@ -69,7 +69,7 @@ export async function getAllInvites(cell: CallableCell): Promise<InviteInfo[]> {
   });
 }
 
-export async function acceptInvite(cell: CallableCell, creationHash:ActionHash): Promise<boolean> {
+export async function acceptInvite(cell: CallableCell, creationHash:ActionHash): Promise<ActionHash> {
   return cell.callZome({
     zome_name: "invitations",
     fn_name: "accept_invitation",
@@ -77,7 +77,7 @@ export async function acceptInvite(cell: CallableCell, creationHash:ActionHash):
   });
 }
 
-export async function rejectInvite(cell:CallableCell, creationHash: ActionHash): Promise<boolean> {
+export async function rejectInvite(cell:CallableCell, creationHash: ActionHash): Promise<ActionHash> {
   return cell.callZome({
     zome_name: "invitations",
     fn_name: "reject_invitation",
@@ -85,7 +85,7 @@ export async function rejectInvite(cell:CallableCell, creationHash: ActionHash):
   });
 }
 
-export async function clearInvite(cell:CallableCell, creationHash: ActionHash): Promise<boolean> {
+export async function clearInvite(cell:CallableCell, creationHash: ActionHash): Promise<ActionHash> {
   return cell.callZome({
     zome_name: "invitations",
     fn_name: "clear_invitation",
