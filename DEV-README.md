@@ -1,7 +1,7 @@
 
 # Invitations Module
 
-![image](https://github.com/holochain-open-dev/invitations/assets/17417820/65c24bb4-2326-422b-9c57-c48947a352cb)
+![image](https://github.com/holochain-open-dev/invitations/assets/17417820/0574be76-adaf-4c9c-9b30-fabb54e33874)
 
 ## Test the module without installation
 run `nix develop`, `npm install` and `npm test` in the root folder of repository.
