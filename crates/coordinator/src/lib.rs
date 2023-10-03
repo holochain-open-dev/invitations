@@ -37,13 +37,13 @@ pub fn post_commit(committed_actions: Vec<SignedActionHashed>) {
 fn signal_action(action: SignedActionHashed) -> ExternResult<()> {
     match action.hashed.content.clone() {
         Action::Create(_create) => {
-            if let Ok(Some(invite_entry_info)) = get_invitation_detail(&action.hashed.hash, &action.hashed.hash) {
+            if let Ok(Some(invite_entry_info)) = get_invitation_detail(&action.hashed.hash) {
                 signals::invitation_received(action, invite_entry_info.clone())?;
             }
             Ok(())
         }
-        Action::Update(update) => {
-            if let Ok(Some(invite_entry_info)) = get_invitation_detail(&action.hashed.hash, &update.original_action_address) {
+        Action::Update(_update) => {
+            if let Ok(Some(invite_entry_info)) = get_invitation_detail_update(&action.hashed.hash) {
                 signals::invitation_updated(action, invite_entry_info.clone())?;
             }
             Ok(())
@@ -60,12 +60,12 @@ fn signal_action(action: SignedActionHashed) -> ExternResult<()> {
         }
         Action::CreateLink(create_link) => {
             if let Ok(Some(link_type)) = LinkTypes::from_type(create_link.zome_index, create_link.link_type) {
-                if link_type == LinkTypes::InviteToMembers {
+                if link_type == LinkTypes::InviteToAgent {
                     let invite_entry_info = get_invitation_detail_by_link_target(create_link.base_address)?;
-                    if create_link.tag == LinkTag::new("Accepted") {
+                    if create_link.tag == LinkTag::new("accepted") {
                         signals::invitation_accepted(action, invite_entry_info)?;
                     }
-                    else if create_link.tag == LinkTag::new("Rejected") {
+                    else if create_link.tag == LinkTag::new("rejected") {
                         signals::invitation_rejected(action, invite_entry_info)?;
                     } 
                 }
@@ -79,30 +79,26 @@ fn signal_action(action: SignedActionHashed) -> ExternResult<()> {
     }
 }
 
-fn get_record_for_action(action_hash: &ActionHash) -> ExternResult<Option<Record>> {
-    let record = match get_details(action_hash.clone(), GetOptions::default())? {
-        Some(Details::Record(record_details)) => record_details.record,
-        _ => {
-            return Ok(None);
-        }
-    };
-    return Ok(Some(record))
+
+fn get_invitation_detail(original_action_hash: &ActionHash) -> ExternResult<Option<InviteInfo>> {
+        let invite_entry_info = invite::get_invitation_info(&original_action_hash)?;
+        return Ok(Some(invite_entry_info));
+   // };
+   // return Ok(None)
 }
 
-fn get_invitation_detail(action_hash:&ActionHash, original_action_hash: &ActionHash) -> ExternResult<Option<InviteInfo>> {
-    if let Ok(Some(invite_record)) = get_record_for_action(action_hash){
-        let invite_entry_info = invite::get_invitation_info(invite_record,original_action_hash)?;
+fn get_invitation_detail_update(action_hash: &ActionHash) -> ExternResult<Option<InviteInfo>> {
+    //if let Ok(Some(invite_record)) = get_record_for_action(action_hash){
+        let invite_entry_info = invite::get_invitation_update_info(action_hash)?;
             return Ok(Some(invite_entry_info));
-    };
-    return Ok(None)
+    //};
+    //return Ok(None)
 }
 
 fn get_invitation_detail_by_link_target(link_target:HoloHash<hash_type::AnyLinkable>) -> ExternResult<InviteInfo> {
     if let Ok(action_hash) = ActionHash::try_from(link_target){
-        if let Some(invite_record) = get(action_hash.clone(), GetOptions::content())? {
-            let invite_entry_info = invite::get_invitation_info(invite_record,&action_hash)?;
-            return Ok(invite_entry_info)
-        }
+        let invite_entry_info = invite::get_invitation_info(&action_hash)?;
+        return Ok(invite_entry_info)
     }
     return Err(wasm_error!("Invite_entry_info not found"))
 
