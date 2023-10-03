@@ -129,7 +129,7 @@ test('3. create and accept Invite', async () => {
     assert.equal(bob_signal.payload['type'], 'InvitationReceived')
 
     console.log("\nBob accepts the invite\n")  //this would be better to get back the action hash from the createlink
-    const result = await acceptInvite(bob.cells[0],bob_signal.payload['data'].invitation_original_hash)
+    const result = await acceptInvite(bob.cells[0],bob_signal.payload['data'].creation_hash)
     console.log("Accept link hash: ", result)
     assert.isDefined(result)
 
@@ -197,7 +197,7 @@ test('4. create and update Invite', async () => {
     assert.equal(bob_signal.payload['type'], 'InvitationReceived')
 
     console.log("\nBob accepts the invitation\n")
-    const accept = await acceptInvite(bob.cells[0],bob_signal.payload['data'].invitation_original_hash)
+    const accept = await acceptInvite(bob.cells[0],bob_signal.payload['data'].creation_hash)
     console.log("Accept link hash: ", accept)
     
     await dhtSync([alice, bob], alice.cells[0].cell_id[0]);
@@ -208,7 +208,7 @@ test('4. create and update Invite', async () => {
     assert.deepEqual(invitees[0], bob.agentPubKey, "Bob was not found in the accepted invitees")
 
     console.log("Alice sees Bob has accepted the invite via a signal and decides to update the invite location and start_time\n")
-    let inviteUpdate = getSampleInviteInputUpdate([bob.agentPubKey,alice.agentPubKey], alice_signal.payload['data'].invitation_original_hash)
+    let inviteUpdate = getSampleInviteInputUpdate([bob.agentPubKey,alice.agentPubKey], alice_signal.payload['data'].creation_hash)
     const invite_list_alice: InviteInfo = await updateInvitation(alice.cells[0],inviteUpdate)
     console.log(invite_list_alice)
     
@@ -274,7 +274,7 @@ test('5. create and reject Invite', async () => {
     assert.equal(bob_signal.payload['type'], 'InvitationReceived')
 
     console.log("\nBob rejects the invitation\n")
-    const reject = await rejectInvite(bob.cells[0],bob_signal.payload['data'].invitation_original_hash)
+    const reject = await rejectInvite(bob.cells[0],bob_signal.payload['data'].creation_hash)
     console.log("reject hash:",reject)
     
     await dhtSync([alice, bob], alice.cells[0].cell_id[0]);

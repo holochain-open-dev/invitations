@@ -41,7 +41,7 @@ test('6. try to update an invite without being the author', async () => {
     assert.isNotEmpty(invite_list_bob)
 
     console.log("Bob trys to update the invite")
-    const invite_update = getSampleInviteInputUpdate([bob.agentPubKey,alice.agentPubKey],invite_detail.invitation_original_hash)
+    const invite_update = getSampleInviteInputUpdate([bob.agentPubKey,alice.agentPubKey],invite_detail.creation_hash)
     var invite_update_list_bob : null | InviteInfo = null
     try {
        var invite_update_list_bob: InviteInfo = await updateInvitation(bob.cells[0],invite_update)
@@ -80,7 +80,7 @@ test('7. try to accept an invite without being an invitee', async () => {
     console.log("Alice trys to accept the invite")
     var result : null | ActionHash = null
     try {
-      var result: ActionHash = await acceptInvite(alice.cells[0],invite_detail.invitation_original_hash)
+      var result: ActionHash = await acceptInvite(alice.cells[0],invite_detail.creation_hash)
     } catch (e:any){
       console.log(e)
     }

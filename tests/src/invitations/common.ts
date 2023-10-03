@@ -13,7 +13,9 @@ export type Invite = {
 
 export type InviteInfo = {
   invitation: Invite,
-  invitation_original_hash: ActionHash,
+  creation_hash: ActionHash,
+  author: AgentPubKey
+  timestamp: Timestamp
   invitees_who_accepted: AgentPubKey[],
   invitees_who_rejected: AgentPubKey[],
   invitees_pending: AgentPubKey[]
@@ -26,7 +28,7 @@ export type InviteInput = {
   start_time?: Timestamp,
   end_time?: Timestamp,
   details?: Record<string, string>;
-  original_hash?: ActionHash
+  creation_hash?: ActionHash
 }
 
 export function getSampleInviteInput(inviteesInput: AgentPubKey[]): InviteInput {
@@ -34,7 +36,7 @@ export function getSampleInviteInput(inviteesInput: AgentPubKey[]): InviteInput 
 } 
 
 export function getSampleInviteInputUpdate(inviteesInput: AgentPubKey[], first_hash:ActionHash): InviteInput {
-  return { invitees: inviteesInput, location: "Amsterdam", start_time: Date.now(), end_time: Date.now()+86400, original_hash: first_hash}
+  return { invitees: inviteesInput, location: "Amsterdam", start_time: Date.now(), end_time: Date.now()+86400, creation_hash: first_hash}
 } 
 
 export async function sendInvitations(cell: CallableCell, invitation:InviteInput): Promise<InviteInfo> {

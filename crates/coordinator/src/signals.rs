@@ -1,16 +1,9 @@
 use hdk::prelude::*;
-//use hc_integrity_zome_invitations::{EntryTypes, LinkTypes};
 use crate::invite::InviteInfo;
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(tag = "type")]
 pub enum Signal {
-    //EntryUpdated {
-    //    action: SignedActionHashed,
-    //    app_entry: EntryTypes,
-    //    original_app_entry: EntryTypes,
-    //},
-   // LinkDeleted { action: SignedActionHashed, link_type: LinkTypes },
     InvitationAccepted {action: SignedActionHashed, data: InviteInfo },
     InvitationReceived {action: SignedActionHashed, data: InviteInfo},
     InvitationRejected {action: SignedActionHashed, data: InviteInfo},
@@ -69,7 +62,7 @@ pub fn invitation_accepted(action_data: SignedActionHashed, invite_detail:Invite
         data: invite_detail.clone()
     };
 
-    let send_signal_to: Vec<AgentPubKey> = vec![invite_detail.invitation.inviter];
+    let send_signal_to: Vec<AgentPubKey> = vec![invite_detail.author];
     remote_signal(signal, send_signal_to)?;
     Ok(true)
 }
@@ -81,7 +74,7 @@ pub fn invitation_rejected(action_data: SignedActionHashed, invite_detail:Invite
         data: invite_detail.clone()
     };
 
-    let send_signal_to: Vec<AgentPubKey> = vec![invite_detail.invitation.inviter];
+    let send_signal_to: Vec<AgentPubKey> = vec![invite_detail.author];
     remote_signal(signal, send_signal_to)?;
     Ok(true)
 }
