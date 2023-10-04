@@ -6,9 +6,10 @@ Below is a communication diagram (Sequence, Structure and State) that shows the 
 
 Structure: - It shows all the Object types stored in the system as well as DTO's (Data Transfer Objects) for input, ouput and listen DTO'S for signals.  
 Sequence: - You can see the API for the module, and basic interaction between the conductor and the UI client  
-State: - State changes can be seen to some extent in the link tags.  
+State: - The most important state changes can be seen in the link tags and are followed up by appropriate signal variants.
 - agent to invitation (pending,inviter,committed)
 - invitation to agent (accepted,rejected)  
+
           
 ![image](https://github.com/holochain-open-dev/invitations/assets/17417820/241577ce-055d-4784-aff0-cc06f4d5e4cd)
 
