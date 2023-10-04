@@ -1,5 +1,5 @@
 [package]
-authors = ["nphias@gmail.com","manuel.r.puentes.d@gmail.com"]
+authors = ["nphias@gmail.com","manuel.r.puentes.d@gmail.com","guillem.cordoba@gmail.com"]
 name = "hc_coordinator_zome_invitations"
 version = "0.2.1"
 edition = "2021"
