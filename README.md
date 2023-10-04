@@ -6,7 +6,7 @@ A module for creating and managing individual or group invitations, can be used 
 
 > PREREQUISITE: set up the [holochain development environment](https://developer.holochain.org/docs/install/).
 
-## Developer setup
+## Documentation and Developer setup
 
 Visit the [developer setup](/DEV-README.md).
 
