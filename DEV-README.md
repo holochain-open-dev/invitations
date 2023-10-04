@@ -4,7 +4,7 @@
 This module is intended for creating and coordinating invitation groups in a DHT. 
 Below is a communication diagram (Sequence, Structure and State) that shows the design of this module at a high level.
 
-Structure: - It shows all the Object types stored in the system as well as DTO's (Data Transfer Objects) for input, ouput listen DTO'S for signals.  
+Structure: - It shows all the Object types stored in the system as well as DTO's (Data Transfer Objects) for input, ouput and listen DTO'S for signals.  
 Sequence: - You can see the API for the module, and basic interaction between the conductor and the UI client  
 State: - State changes can be seen to some extent in the link tags.  
 - agent to invitation (pending,inviter,committed)
@@ -13,7 +13,7 @@ State: - State changes can be seen to some extent in the link tags.
 ![image](https://github.com/holochain-open-dev/invitations/assets/17417820/241577ce-055d-4784-aff0-cc06f4d5e4cd)
 
 
-in this version of the module, the author of the invitation is the only one that can make updates. They can also choose to be an invitee or not. If they choose to create an invitation that doesn't include them, they are linked by the "Inviter" tag otherise invitees are given a pending tag for the link.
+in this version of the module, the author of the invitation is the only one that can make updates. They can also choose to be an invitee or not. If they choose to create an invitation that doesn't include them, they are linked by the "Inviter" tag otherise invitees are given a "pending" tag for the link.
 
 status changes once the invitee chooses to accept or reject the invitation by
 moving the agent link from "pending" to "committed" 
