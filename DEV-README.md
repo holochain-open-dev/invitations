@@ -1,8 +1,8 @@
 
 # Invitations Module
 
-This module is intended for creating and coordinating invitation groups in a DHT. 
-Below is a communication diagram (Sequence, Structure and State) that shows the design of this module at a high level.
+This module is intended for creating and coordinating invitation groups in a public DHT.  
+Below is a **communication diagram (Sequence, Structure and State)** that shows the design of this module at a high level.
 
 Structure: - It shows all the Object types stored in the system as well as DTO's (Data Transfer Objects) for input, ouput and listen DTO'S for signals.  
 Sequence: - You can see the API for the module, and basic interaction between the conductor and the UI client  
