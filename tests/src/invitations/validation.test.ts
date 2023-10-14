@@ -8,7 +8,7 @@ import { acceptInvite, clearInvite, getAllInvites, getPendingInvites, getSampleI
 
 const path_to_happ = '/../workdir/happ/invitations.happ'
 
-test('6. try to update an invite without being the author', async () => {
+test('7. try to update an invite without being the author', async () => {
   await runScenario(async scenario => {
     // Construct proper paths for your app.
     // This assumes app bundle created by the `hc app pack` command.
@@ -25,7 +25,7 @@ test('6. try to update an invite without being the author', async () => {
     // Shortcut peer discovery through gossip and register all agents in every
     // conductor of the scenario.
     await scenario.shareAllAgents();
-    console.log("\n************************* START TEST ****************************\n")
+    console.log("\n************************* START TEST 7 ****************************\n")
 
     console.log("\nAlice creates an Invite")
     const invite_detail: InviteInfo = await sendInvitations(alice.cells[0], getSampleInviteInput([bob.agentPubKey,alice.agentPubKey]));
@@ -53,7 +53,7 @@ test('6. try to update an invite without being the author', async () => {
   });
 });
 
-test('7. try to accept an invite without being an invitee', async () => {
+test('8. try to accept an invite without being an invitee', async () => {
   await runScenario(async scenario => {
     // Construct proper paths for your app.
     // This assumes app bundle created by the `hc app pack` command.
@@ -70,7 +70,7 @@ test('7. try to accept an invite without being an invitee', async () => {
     // Shortcut peer discovery through gossip and register all agents in every
     // conductor of the scenario.
     await scenario.shareAllAgents();
-    console.log("\n************************* START TEST ****************************\n")
+    console.log("\n************************* START TEST 8 ****************************\n")
 
     console.log("\nAlice creates an Invite without being an invitee")
     const invite_detail: InviteInfo = await sendInvitations(alice.cells[0], getSampleInviteInput([bob.agentPubKey]));

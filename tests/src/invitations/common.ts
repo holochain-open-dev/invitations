@@ -87,7 +87,7 @@ export async function rejectInvite(cell:CallableCell, creationHash: ActionHash):
   });
 }
 
-export async function clearInvite(cell:CallableCell, creationHash: ActionHash): Promise<ActionHash> {
+export async function clearInvite(cell:CallableCell, creationHash: ActionHash): Promise<void> {
   return cell.callZome({
     zome_name: "invitations",
     fn_name: "clear_invitation",

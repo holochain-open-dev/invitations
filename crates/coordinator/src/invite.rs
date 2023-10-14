@@ -49,14 +49,14 @@ fn create_invitation(input: InviteInput) -> ExternResult<InviteInfo> {
     }
 
     //creator of the invitation is not an invitee
-    if !input.invitees.contains(&my_pub_key){
+    //if !input.invitees.contains(&my_pub_key){
         create_link(
             my_pub_key.clone(),
             action_hash.clone(),
             LinkTypes::AgentToInvite,
             LinkTag::new(String::from("inviter")),
         )?;
-    }
+    //}
     return Ok(get_invitation_info(&action_hash)?);
 }
 
@@ -99,6 +99,13 @@ pub fn get_all_my_invitations(_: ()) -> ExternResult<Option<Vec<InviteInfo>>> {
     Ok(get_invite_info_from_links(links)?)
 }
 
+#[hdk_extern]
+pub fn get_my_authored_invitations(_: ()) -> ExternResult<Option<Vec<InviteInfo>>> {
+    let agent: AgentPubKey = agent_info()?.agent_latest_pubkey;
+    let links = get_links(agent, LinkTypes::AgentToInvite,Some(LinkTag::new("inviter")))?;
+    Ok(get_invite_info_from_links(links)?)
+}
+
 
 #[hdk_extern]
 pub fn accept_invitation(original_action_hash: ActionHash) -> ExternResult<ActionHash> {
@@ -130,16 +137,34 @@ pub fn reject_invitation(original_action_hash: ActionHash) -> ExternResult<Actio
     return Ok(committed_link_hash)
 }
 
+#[hdk_extern]
+pub fn clear_invitation(original_action_hash: ActionHash) -> ExternResult<()> {
+    let links = get_links(
+        agent_info()?.agent_latest_pubkey, 
+        LinkTypes::AgentToInvite,
+        None,
+    )?;
+
+    links
+        .into_iter()
+        .filter(|link| link.target == HoloHash::from(original_action_hash.clone()))
+        .map(|link_to_invitation| -> ExternResult<()> {
+            delete_link(link_to_invitation.create_link_hash)?;
+            Ok(())
+        })
+        .collect::<ExternResult<Vec<()>>>()?;
+    return Ok(())
+}
+
 
 
 //helpers
 
 fn get_invite_info_from_links(links: Vec<Link>) -> ExternResult<Option<Vec<InviteInfo>>> {
-    //let original_action_hash = ActionHash::try_from(links[0].clone().target).unwrap();
     if !links.is_empty(){
         let mut invitations: Vec<InviteInfo> = vec![];
         for link in links.into_iter() {
-            let original_action_hash = ActionHash::try_from(link.target).unwrap();
+            let original_action_hash = ActionHash::try_from(link.target).map_err(|err| wasm_error!(err))?;
             let invitation_info = get_invitation_info(&original_action_hash);
             invitations.push(invitation_info?); 
         }

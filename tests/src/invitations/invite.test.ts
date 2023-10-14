@@ -1,7 +1,7 @@
 import { assert, test } from "vitest";
 
 import { runScenario, pause, CallableCell, dhtSync, runLocalServices, createConductor, enableAndGetAgentApp, stopLocalServices, cleanAllConductors } from '@holochain/tryorama';
-import { NewEntryAction, ActionHash, Record, AppBundleSource, fakeDnaHash, fakeActionHash, fakeAgentPubKey, fakeEntryHash, AppSignalCb, AppSignal, RecordEntry, AppWebsocket } from '@holochain/client';
+import { NewEntryAction, ActionHash, Record, AppBundleSource, fakeDnaHash, fakeActionHash, fakeAgentPubKey, fakeEntryHash, AppSignalCb, AppSignal, RecordEntry, AppWebsocket, encodeHashToBase64 } from '@holochain/client';
 import { decode } from '@msgpack/msgpack';
 
 import { acceptInvite, clearInvite, getAllInvites, getPendingInvites, getSampleInviteInput, getSampleInviteInputUpdate, InviteInfo, rejectInvite, sendInvitations, updateInvitation } from './common.js';
@@ -25,7 +25,7 @@ test('1. create and compare invitation lists', async () => {
     // Shortcut peer discovery through gossip and register all agents in every
     // conductor of the scenario.
     await scenario.shareAllAgents();
-    console.log("\n************************* START TEST ****************************\n")
+    console.log("\n************************* START TEST 1 ****************************\n")
 
     console.log("\nAlice creates an Invite")
     const invite_detail: InviteInfo = await sendInvitations(alice.cells[0], getSampleInviteInput([bob.agentPubKey,alice.agentPubKey]));
@@ -65,7 +65,7 @@ test('2. create and get invites with only one invitee, that isnt you', async () 
     // Shortcut peer discovery through gossip and register all agents in every
     // conductor of the scenario.
     await scenario.shareAllAgents();
-    console.log("\n************************* START TEST ****************************\n")
+    console.log("\n************************* START TEST 2 ****************************\n")
 
     console.log("\nAlice creates an Invite")
     const invite_detail: InviteInfo = await sendInvitations(alice.cells[0], getSampleInviteInput([bob.agentPubKey]));
@@ -117,7 +117,7 @@ test('3. create and accept Invite', async () => {
 
     await scenario.shareAllAgents();
 
-    console.log("\n************************* START TEST ****************************\n")
+    console.log("\n************************* START TEST 3 ****************************\n")
     console.log("\nAlice creates an Invite to Bob\n")
     const invite_detail: InviteInfo = await sendInvitations(alice.cells[0],getSampleInviteInput([bob.agentPubKey,alice.agentPubKey]));
     assert.ok(invite_detail);
@@ -184,7 +184,7 @@ test('4. create and update Invite', async () => {
 
     await scenario.shareAllAgents();
 
-    console.log("\n************************* START TEST ****************************\n")
+    console.log("\n************************* START TEST 4 ****************************\n")
 
     console.log("\nAlice creates an Invite to Bob\n")
     const invite_detail: InviteInfo = await sendInvitations(alice.cells[0],getSampleInviteInput([bob.agentPubKey,alice.agentPubKey]));
@@ -261,7 +261,7 @@ test('5. create and reject Invite', async () => {
     // conductor of the scenario.
     await scenario.shareAllAgents();
 
-    console.log("\n************************* START TEST ****************************\n")
+    console.log("\n************************* START TEST 5 ****************************\n")
 
     console.log("\nAlice creates an Invite to Bob\n")
     const invite_detail: InviteInfo = await sendInvitations(alice.cells[0],getSampleInviteInput([bob.agentPubKey,alice.agentPubKey]));
@@ -292,7 +292,7 @@ test('5. create and reject Invite', async () => {
 });
 
 
-/*test('5. create, reject and clear Invite', async () => {
+test('6. create, reject and clear Invite', async () => {
   await runScenario(async scenario => {
         
     // setup signal receivers
@@ -330,7 +330,7 @@ test('5. create and reject Invite', async () => {
     // conductor of the scenario.
     await scenario.shareAllAgents();
 
-    console.log("\n************************* START TEST ****************************\n")
+    console.log("\n************************* START TEST 6 ****************************\n")
 
     console.log("\nAlice creates an Invite to Bob\n")
     const invite_detail: InviteInfo = await sendInvitations(alice.cells[0],getSampleInviteInput([bob.agentPubKey]));
@@ -343,16 +343,16 @@ test('5. create and reject Invite', async () => {
     assert.equal(bob_signal.payload['type'], 'InvitationReceived')
 
     console.log("\nBob rejects the invitation\n")
-    const reject: boolean = await rejectInvite(bob.cells[0],bob_signal.payload['data'].invitation_original_hash)
-    console.log(reject)
+    const reject = await rejectInvite(bob.cells[0],bob_signal.payload['data'].creation_hash)
+    console.log("reject hash:",encodeHashToBase64(reject))
     
     console.log("Bob clears the invitation")
-    const result: boolean = await clearInvite(bob.cells[0], bob_signal.payload['data'].invitation_original_hash)
+    const result = await clearInvite(bob.cells[0], bob_signal.payload['data'].creation_hash)
     console.log(result)
 
     console.log("Bob checks that he has deleted the invitation from his list by seeing he has no invitations")
-    const invite_list_bob  = await getPendingInvites(bob.cells[0])
+    const invite_list_bob  = await getAllInvites(bob.cells[0])
     console.log(invite_list_bob)
     assert.isNull(invite_list_bob)
   });
-});*/
+});
