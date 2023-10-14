@@ -10,14 +10,26 @@ State: - The most important state changes can be seen in the link tags and are f
 - agent to invitation (pending,inviter,committed)
 - invitation to agent (accepted,rejected)  
 
-          
-![image](https://github.com/holochain-open-dev/invitations/assets/17417820/241577ce-055d-4784-aff0-cc06f4d5e4cd)
+
+![image](https://github.com/holochain-open-dev/invitations/assets/17417820/7d362198-4876-4484-9ac5-bb87d633249d)
+
 
 
 in this version of the module, the author of the invitation is the only one that can make updates. They can also choose to be an invitee or not. If they choose to create an invitation that doesn't include them, they are linked by the "Inviter" tag otherise invitees are given a "pending" tag for the link.
 
 status changes once the invitee chooses to accept or reject the invitation by
 moving the agent link from "pending" to "committed" 
+
+## API
+
+          create_invitation (Invitation: InviteInput) ->  InviteInfo
+          get_my_pending_invitations () -> InviteInfo[]
+          get_all_my_invitations () -> InviteInfo[]
+          update_invitation (Invitation: InviteInput) -> ActionHash
+          accept_invitation (creation_hash: ActionHash) -> ActionHash
+          reject_invitation (creation_hash: ActionHash) -> ActionHash
+          clear_invitation (creation_hash: ActionHash) -> ActionHash
+
 
 ## Test the module without installation
 run `nix develop`, `npm install` and `npm test` in the root folder of repository.
