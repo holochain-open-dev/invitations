@@ -79,13 +79,13 @@ fn signal_action(action: SignedActionHashed) -> ExternResult<()> {
 }
 
 
-fn get_invitation_detail(original_action_hash: &ActionHash) -> ExternResult<Option<InviteInfo>> {
-    let invite_entry_info = invite::get_invitation_info(&original_action_hash)?;
+fn get_invitation_detail(creation_action_hash: &ActionHash) -> ExternResult<Option<InviteInfo>> {
+    let invite_entry_info = invite::get_invitation_info(&creation_action_hash)?;
     return Ok(Some(invite_entry_info));
 }
 
-fn get_invitation_detail_update(action_hash: &ActionHash) -> ExternResult<Option<InviteInfo>> {
-    let invite_entry_info = invite::get_invitation_update_info(action_hash)?;
+fn get_invitation_detail_update(update_action_hash: &ActionHash) -> ExternResult<Option<InviteInfo>> {
+    let invite_entry_info = invite::get_invitation_update_info(update_action_hash)?;
     return Ok(Some(invite_entry_info));
 }
 

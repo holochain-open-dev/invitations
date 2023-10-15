@@ -1,5 +1,5 @@
 import { CallableCell } from '@holochain/tryorama';
-import { NewEntryAction, ActionHash, AppBundleSource, fakeActionHash, fakeAgentPubKey, fakeEntryHash, fakeDnaHash, AgentPubKey, EntryHash, Action, Timestamp } from '@holochain/client';
+import { ActionHash, AgentPubKey, Timestamp } from '@holochain/client';
 
 export type Invite = {
   inviter: AgentPubKey,
@@ -32,7 +32,7 @@ export type InviteInput = {
 }
 
 export function getSampleInviteInput(inviteesInput: AgentPubKey[]): InviteInput {
-  return { invitees: inviteesInput, location: "london" }
+  return { invitees: inviteesInput, location: "London" }
 } 
 
 export function getSampleInviteInputUpdate(inviteesInput: AgentPubKey[], first_hash:ActionHash): InviteInput {

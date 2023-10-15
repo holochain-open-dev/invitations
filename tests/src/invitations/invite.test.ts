@@ -1,9 +1,7 @@
 import { assert, test } from "vitest";
 
-import { runScenario, pause, CallableCell, dhtSync, runLocalServices, createConductor, enableAndGetAgentApp, stopLocalServices, cleanAllConductors } from '@holochain/tryorama';
-import { NewEntryAction, ActionHash, Record, AppBundleSource, fakeDnaHash, fakeActionHash, fakeAgentPubKey, fakeEntryHash, AppSignalCb, AppSignal, RecordEntry, AppWebsocket, encodeHashToBase64 } from '@holochain/client';
-import { decode } from '@msgpack/msgpack';
-
+import { runScenario, dhtSync } from '@holochain/tryorama';
+import { AppSignalCb, AppSignal, encodeHashToBase64 } from '@holochain/client';
 import { acceptInvite, clearInvite, getAllInvites, getPendingInvites, getSampleInviteInput, getSampleInviteInputUpdate, InviteInfo, rejectInvite, sendInvitations, updateInvitation } from './common.js';
 
 const path_to_happ = '/../workdir/happ/invitations.happ'
@@ -209,8 +207,8 @@ test('4. create and update Invite', async () => {
 
     console.log("Alice sees Bob has accepted the invite via a signal and decides to update the invite location and start_time\n")
     let inviteUpdate = getSampleInviteInputUpdate([bob.agentPubKey,alice.agentPubKey], alice_signal.payload['data'].creation_hash)
-    const invite_list_alice: InviteInfo = await updateInvitation(alice.cells[0],inviteUpdate)
-    console.log(invite_list_alice)
+    const invite_detail_update: InviteInfo = await updateInvitation(alice.cells[0],inviteUpdate)
+    console.log(invite_detail_update)
     
     await dhtSync([alice, bob], bob.cells[0].cell_id[0]);
     let bob_signal2 = await signalReceived_bob
@@ -219,6 +217,8 @@ test('4. create and update Invite', async () => {
     console.log("Bob sees he has been signalled an updated Invite:\n",bob_signal2.payload['data'])
     console.log(bob_signal2.payload['type'])
     assert.equal(bob_signal2.payload['type'], 'InvitationUpdated')
+    assert.notDeepEqual(invite_detail, invite_detail_update, "update failed")
+    assert.equal(invite_detail_update.invitation.location, "Amsterdam", "location update failed")
   });
 });
 

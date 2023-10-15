@@ -38,7 +38,7 @@ fn create_invitation(input: InviteInput) -> ExternResult<InviteInfo> {
 
 
 #[hdk_extern]
-pub fn update_invitation(invitation: InviteInput) -> ExternResult<ActionHash> {
+pub fn update_invitation(invitation: InviteInput) -> ExternResult<InviteInfo> {
 
     let hash_result = match invitation.creation_hash {
         Some(hash) => hash,
@@ -56,7 +56,7 @@ pub fn update_invitation(invitation: InviteInput) -> ExternResult<ActionHash> {
         details: invitation.details,
       };
     let update_hash = update_entry(last_invite_record.action_address().clone(), &updated_invite)?;
-    return Ok(update_hash);
+    return Ok(get_invitation_update_info(&update_hash)?);
 }
 
 
@@ -171,8 +171,11 @@ fn commit_invitation(original_action_hash: ActionHash) -> ExternResult<ActionHas
 }
 
 
-// from the details of an Action we cycle up the chain of Record updates to get the latest one
-// with some reference to the latest Action (link or field entry) this function could be avoided 
+/* from the details of an Action we cycle up the chain of Record updates to get the latest one
+   note:
+   in practice we dont expect many invite updates.. A performance enhancement if there were many updates
+   would be to link the creation_action to the last_update_action
+ */ 
 fn get_latest_record(action_hash: ActionHash) -> ExternResult<Record> {
     let details = get_details(action_hash, GetOptions::default())?.ok_or(wasm_error!(
         WasmErrorInner::Guest("invite not found".into())
@@ -189,7 +192,7 @@ fn get_latest_record(action_hash: ActionHash) -> ExternResult<Record> {
     }
 }
 
-//we cycle down the chain of records to find the first/genesis record's Create action.
+//we cycle down the chain of update records to find the first/genesis record's Create action.
 //if all the Action::Updates retained a copy of the genesis create action .. we could remove this function and just get that
 fn get_creation_action_hash(invite_record:&Record) -> ExternResult<ActionHash> {
     if let ActionType::Create = invite_record.action().action_type(){
@@ -211,22 +214,20 @@ fn get_creation_action_hash(invite_record:&Record) -> ExternResult<ActionHash> {
 }
 
 pub fn get_invitation_info(original_action_hash: &ActionHash) -> ExternResult<InviteInfo> {
-    let invite_record = get(original_action_hash.clone(), GetOptions::default())?
-    .ok_or(wasm_error!(WasmErrorInner::Guest(String::from("Could not find the Invitation action"))))?;
-
+    let invite_record = get_latest_record(original_action_hash.clone())?;
     let invitation_entry: Invite = invite_record.entry.clone().to_app_option().map_err(|e| wasm_error!(e))?
-    .ok_or(wasm_error!(WasmErrorInner::Guest(String::from("Could not find Invitation for hash in invitation details "))))?;
+    .ok_or(wasm_error!(WasmErrorInner::Guest(String::from("Could not de-serialize the Invite Entry in the record"))))?;
     
     return get_invitation_info_details(invitation_entry, invite_record, original_action_hash)
 }
 
-//different path for updates
+//unfortunately we loose reference to the creationHash in the post-commit callback and have to use a helper function to get it from the DHT/source chain
 pub fn get_invitation_update_info(update_action_hash: &ActionHash) -> ExternResult<InviteInfo> {
     let invite_record = get(update_action_hash.clone(), GetOptions::default())?
-    .ok_or(wasm_error!(WasmErrorInner::Guest(String::from("Could not find the Invitation action"))))?;
+    .ok_or(wasm_error!(WasmErrorInner::Guest(String::from("Could not find the Invitation update record"))))?;
 
     let invite_entry: Invite = invite_record.entry.clone().to_app_option().map_err(|e| wasm_error!(e))?
-    .ok_or(wasm_error!(WasmErrorInner::Guest(String::from("Could not find Invitation for hash in invitation details "))))?;
+    .ok_or(wasm_error!(WasmErrorInner::Guest(String::from("Could not de-serialize the Invite Entry in the record"))))?;
 
     //get creation hash from cycling update chain...
     let creation_action_hash = get_creation_action_hash(&invite_record)?;
@@ -234,9 +235,9 @@ pub fn get_invitation_update_info(update_action_hash: &ActionHash) -> ExternResu
 }
 
 //DTO for all returns and signals
-pub fn get_invitation_info_details(invite:Invite, invite_record: Record, first_action_hash: &ActionHash)-> ExternResult<InviteInfo> {
+pub fn get_invitation_info_details(invite:Invite, invite_record: Record, create_action_hash: &ActionHash)-> ExternResult<InviteInfo> {
     let invitees_who_accepted: Vec<AgentPubKey> = get_links(
-        first_action_hash.clone(),
+        create_action_hash.clone(),
         LinkTypes::InviteToAgent,
         Some(LinkTag::new("accepted")),
     )?.into_iter()
@@ -244,7 +245,7 @@ pub fn get_invitation_info_details(invite:Invite, invite_record: Record, first_a
     .collect();
 
     let invitees_who_rejected: Vec<AgentPubKey> = get_links(
-        first_action_hash.clone(),
+        create_action_hash.clone(),
         LinkTypes::InviteToAgent,
         Some(LinkTag::new("rejected")),
     )?.into_iter()
@@ -256,7 +257,7 @@ pub fn get_invitation_info_details(invite:Invite, invite_record: Record, first_a
    
     return Ok(InviteInfo {
         invitation: invite.clone(),
-        creation_hash: first_action_hash.clone(),
+        creation_hash: create_action_hash.clone(),
         author: invite_record.action().author().clone(),
         timestamp: invite_record.action().timestamp(),
         invitees_who_accepted,
