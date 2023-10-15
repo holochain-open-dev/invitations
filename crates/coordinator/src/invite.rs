@@ -1,29 +1,5 @@
 use hdk::prelude::*;
 use hc_integrity_zome_invitations::*;
-use std::collections::BTreeMap;
-
-
-#[derive(Clone, Debug, Serialize, Deserialize, SerializedBytes)]
-pub struct InviteInput {
-    pub invitees: Vec<AgentPubKey>,
-    pub location: Option<String>,
-    pub start_time: Option<Timestamp>,
-    pub end_time: Option<Timestamp>,
-    pub details: Option<BTreeMap<String,String>>,
-    pub creation_hash: Option<ActionHash>
-}
-
-//This struct is an output object and contains helpfull information for the ui
-#[derive(Clone, Debug, Serialize, Deserialize, SerializedBytes)]
-pub struct InviteInfo {
-    pub invitation: Invite,
-    pub creation_hash: ActionHash,
-    pub timestamp: Timestamp,
-    pub author: AgentPubKey,
-    pub invitees_who_accepted: Vec<AgentPubKey>,
-    pub invitees_who_rejected: Vec<AgentPubKey>,
-    pub invitees_pending:Vec<AgentPubKey>,
-}
 
 #[hdk_extern]
 fn create_invitation(input: InviteInput) -> ExternResult<InviteInfo> {
@@ -49,14 +25,14 @@ fn create_invitation(input: InviteInput) -> ExternResult<InviteInfo> {
     }
 
     //creator of the invitation is not an invitee
-    //if !input.invitees.contains(&my_pub_key){
+    if !input.invitees.contains(&my_pub_key){
         create_link(
             my_pub_key.clone(),
             action_hash.clone(),
             LinkTypes::AgentToInvite,
             LinkTag::new(String::from("inviter")),
         )?;
-    //}
+    }
     return Ok(get_invitation_info(&action_hash)?);
 }
 
@@ -96,13 +72,6 @@ pub fn get_my_pending_invitations(_: ()) -> ExternResult<Option<Vec<InviteInfo>>
 pub fn get_all_my_invitations(_: ()) -> ExternResult<Option<Vec<InviteInfo>>> {
     let agent: AgentPubKey = agent_info()?.agent_latest_pubkey;
     let links = get_links(agent, LinkTypes::AgentToInvite,None)?;
-    Ok(get_invite_info_from_links(links)?)
-}
-
-#[hdk_extern]
-pub fn get_my_authored_invitations(_: ()) -> ExternResult<Option<Vec<InviteInfo>>> {
-    let agent: AgentPubKey = agent_info()?.agent_latest_pubkey;
-    let links = get_links(agent, LinkTypes::AgentToInvite,Some(LinkTag::new("inviter")))?;
     Ok(get_invite_info_from_links(links)?)
 }
 
@@ -158,7 +127,8 @@ pub fn clear_invitation(original_action_hash: ActionHash) -> ExternResult<()> {
 
 
 
-//helpers
+
+//************ Helpers **************************
 
 fn get_invite_info_from_links(links: Vec<Link>) -> ExternResult<Option<Vec<InviteInfo>>> {
     if !links.is_empty(){
@@ -201,6 +171,8 @@ fn commit_invitation(original_action_hash: ActionHash) -> ExternResult<ActionHas
 }
 
 
+// from the details of an Action we cycle up the chain of Record updates to get the latest one
+// with some reference to the latest Action (link or field entry) this function could be avoided 
 fn get_latest_record(action_hash: ActionHash) -> ExternResult<Record> {
     let details = get_details(action_hash, GetOptions::default())?.ok_or(wasm_error!(
         WasmErrorInner::Guest("invite not found".into())
@@ -217,7 +189,9 @@ fn get_latest_record(action_hash: ActionHash) -> ExternResult<Record> {
     }
 }
 
-fn get_creation_action_hash_(invite_record:&Record) -> ExternResult<ActionHash> {
+//we cycle down the chain of records to find the first/genesis record's Create action.
+//if all the Action::Updates retained a copy of the genesis create action .. we could remove this function and just get that
+fn get_creation_action_hash(invite_record:&Record) -> ExternResult<ActionHash> {
     if let ActionType::Create = invite_record.action().action_type(){
         return Ok(invite_record.action_address().clone())
     }
@@ -227,7 +201,7 @@ fn get_creation_action_hash_(invite_record:&Record) -> ExternResult<ActionHash> 
                 wasm_error!(
                 WasmErrorInner::Guest(String::from("Could not find the Invitation record"))),
             )?;
-        return get_creation_action_hash_(&previous_record);
+        return get_creation_action_hash(&previous_record);
     } else {
         Err(wasm_error!(
             WasmErrorInner::Guest(String::from("something is seriously wrong "))
@@ -238,33 +212,24 @@ fn get_creation_action_hash_(invite_record:&Record) -> ExternResult<ActionHash> 
 
 pub fn get_invitation_info(original_action_hash: &ActionHash) -> ExternResult<InviteInfo> {
     let invite_record = get(original_action_hash.clone(), GetOptions::default())?
-    .ok_or(
-        wasm_error!(
-            WasmErrorInner::Guest(String::from("Could not find the Invitation action"))
-        ),
-    )?;
-    let invitation_entry: Invite = invite_record.entry.clone().to_app_option().map_err(|e| wasm_error!(e))?.ok_or(
-        wasm_error!(
-            WasmErrorInner::Guest(String::from("Could not find Invitation for hash in invitation details "))
-        ),
-    )?;
+    .ok_or(wasm_error!(WasmErrorInner::Guest(String::from("Could not find the Invitation action"))))?;
+
+    let invitation_entry: Invite = invite_record.entry.clone().to_app_option().map_err(|e| wasm_error!(e))?
+    .ok_or(wasm_error!(WasmErrorInner::Guest(String::from("Could not find Invitation for hash in invitation details "))))?;
+    
     return get_invitation_info_details(invitation_entry, invite_record, original_action_hash)
 }
 
+//different path for updates
 pub fn get_invitation_update_info(update_action_hash: &ActionHash) -> ExternResult<InviteInfo> {
     let invite_record = get(update_action_hash.clone(), GetOptions::default())?
-    .ok_or(
-        wasm_error!(
-            WasmErrorInner::Guest(String::from("Could not find the Invitation action"))
-        ),
-    )?;
-    let invite_entry: Invite = invite_record.entry.clone().to_app_option().map_err(|e| wasm_error!(e))?.ok_or(
-        wasm_error!(
-            WasmErrorInner::Guest(String::from("Could not find Invitation for hash in invitation details "))
-        ),
-    )?;
+    .ok_or(wasm_error!(WasmErrorInner::Guest(String::from("Could not find the Invitation action"))))?;
+
+    let invite_entry: Invite = invite_record.entry.clone().to_app_option().map_err(|e| wasm_error!(e))?
+    .ok_or(wasm_error!(WasmErrorInner::Guest(String::from("Could not find Invitation for hash in invitation details "))))?;
+
     //get creation hash from cycling update chain...
-    let creation_action_hash = get_creation_action_hash_(&invite_record)?;
+    let creation_action_hash = get_creation_action_hash(&invite_record)?;
     return get_invitation_info_details(invite_entry, invite_record, &creation_action_hash)
 }
 

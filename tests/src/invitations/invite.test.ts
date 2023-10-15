@@ -48,7 +48,7 @@ test('1. create and compare invitation lists', async () => {
   });
 });
 
-test('2. create and get invites with only one invitee, that isnt you', async () => {
+test('2. create and get invites where you are not an invitee - but have the inviter link,', async () => {
   await runScenario(async scenario => {
     // Construct proper paths for your app.
     // This assumes app bundle created by the `hc app pack` command.

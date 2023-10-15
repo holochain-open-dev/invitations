@@ -1,5 +1,5 @@
 use hdk::prelude::*;
-use crate::invite::InviteInfo;
+use hc_integrity_zome_invitations::*;
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(tag = "type")]
@@ -11,7 +11,7 @@ pub enum Signal {
 
 }
 
-//broadcast
+//broadcast to everyone inviter
 pub fn invitation_received(action_data: SignedActionHashed, invite_detail:InviteInfo) -> ExternResult<bool> {
     let my_pub_key: AgentPubKey = agent_info()?.agent_latest_pubkey;
 
@@ -33,7 +33,7 @@ pub fn invitation_received(action_data: SignedActionHashed, invite_detail:Invite
     Ok(true)
 }
 
-//broadcast
+//broadcast to everyone except updater - consider an emit_signal for UI
 pub fn invitation_updated(action_data: SignedActionHashed, invite_detail:InviteInfo) -> ExternResult<bool> {
     let my_pub_key: AgentPubKey = agent_info()?.agent_latest_pubkey;
 
@@ -55,7 +55,7 @@ pub fn invitation_updated(action_data: SignedActionHashed, invite_detail:InviteI
     return Ok(true)
 }
 
-//only from invitee to inviter
+//signal only from invitee to inviter to avoid group noise
 pub fn invitation_accepted(action_data: SignedActionHashed, invite_detail:InviteInfo) -> ExternResult<bool> {
     let signal: Signal = Signal::InvitationAccepted {
         action: action_data,
@@ -67,7 +67,7 @@ pub fn invitation_accepted(action_data: SignedActionHashed, invite_detail:Invite
     Ok(true)
 }
 
-//only from invitee to inviter
+//signal only from invitee to inviter to avoid group noise
 pub fn invitation_rejected(action_data: SignedActionHashed, invite_detail:InviteInfo) -> ExternResult<bool> {
     let signal: Signal = Signal::InvitationRejected {
         action: action_data,
