@@ -3,7 +3,6 @@ pub mod invite;
 
 use hdk::prelude::{*, holo_hash::hash_type};
 use hc_integrity_zome_invitations::*;
-use invite::InviteInfo;
 use signals::Signal;
 
 #[hdk_extern]
@@ -81,18 +80,13 @@ fn signal_action(action: SignedActionHashed) -> ExternResult<()> {
 
 
 fn get_invitation_detail(original_action_hash: &ActionHash) -> ExternResult<Option<InviteInfo>> {
-        let invite_entry_info = invite::get_invitation_info(&original_action_hash)?;
-        return Ok(Some(invite_entry_info));
-   // };
-   // return Ok(None)
+    let invite_entry_info = invite::get_invitation_info(&original_action_hash)?;
+    return Ok(Some(invite_entry_info));
 }
 
 fn get_invitation_detail_update(action_hash: &ActionHash) -> ExternResult<Option<InviteInfo>> {
-    //if let Ok(Some(invite_record)) = get_record_for_action(action_hash){
-        let invite_entry_info = invite::get_invitation_update_info(action_hash)?;
-            return Ok(Some(invite_entry_info));
-    //};
-    //return Ok(None)
+    let invite_entry_info = invite::get_invitation_update_info(action_hash)?;
+    return Ok(Some(invite_entry_info));
 }
 
 fn get_invitation_detail_by_link_target(link_target:HoloHash<hash_type::AnyLinkable>) -> ExternResult<InviteInfo> {
