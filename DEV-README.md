@@ -25,7 +25,7 @@ moving the agent link from "pending" to "committed"
           create_invitation (Invitation: InviteInput) ->  InviteInfo
           get_my_pending_invitations () -> InviteInfo[]
           get_all_my_invitations () -> InviteInfo[]
-          update_invitation (Invitation: InviteInput) -> ActionHash
+          update_invitation (Invitation: InviteInput) -> InviteInfo
           accept_invitation (creation_hash: ActionHash) -> ActionHash
           reject_invitation (creation_hash: ActionHash) -> ActionHash
           clear_invitation (creation_hash: ActionHash) -> ActionHash
